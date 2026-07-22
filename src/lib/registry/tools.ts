@@ -200,6 +200,7 @@ export function getTool(category: string, slug: string): ToolDefinition | undefi
 
 export const SITE = {
   name: "DevTility",
+  author: "Nam Tran",
   title: "DevTility — Bộ công cụ tiện ích cho Developer",
   description:
     "Bộ sưu tập công cụ chuyển đổi, máy tính, lịch vạn niên và code editor online: timezone, epoch, tỷ giá, hệ cơ số, đơn vị đo, lương Net/Gross…",

@@ -95,7 +95,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <footer className="border-t border-border/60">
         <div className="mx-auto flex max-w-[1440px] flex-col items-center justify-between gap-2 px-4 py-5 text-xs text-muted-foreground sm:flex-row sm:px-6">
           <p>
-            © {new Date().getFullYear()} {SITE.name} — Non-commercial use only (PolyForm NC 1.0.0)
+            © {new Date().getFullYear()} {SITE.author} — Non-commercial use only (PolyForm NC 1.0.0)
           </p>
           <p className="font-mono">
             build with <span className="text-danger">♥</span> · Next.js · Vercel

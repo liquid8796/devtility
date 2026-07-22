@@ -88,4 +88,6 @@ Xong — route, sidebar, trang chủ, SEO metadata tự động có.
 
 ## 📄 License
 
+Copyright © 2026 **Nam Tran**.
+
 [PolyForm Noncommercial 1.0.0](LICENSE.md) — được phép sử dụng, chỉnh sửa, chia sẻ cho mục đích **phi thương mại**. **Nghiêm cấm sử dụng vào mục đích thương mại dưới mọi hình thức.**

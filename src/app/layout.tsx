@@ -25,6 +25,7 @@ export const metadata: Metadata = {
   },
   description: SITE.description,
   applicationName: SITE.name,
+  authors: [{ name: SITE.author }],
 };
 
 export const viewport: Viewport = {
