@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeftRight, RefreshCw, TrendingDown, TrendingUp } from "lucide-react";
+import { ArrowLeftRight, TrendingDown, TrendingUp } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Area,
@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { CopyButton } from "@/components/ui/copy-button";
 import { Field, Select, TextInput } from "@/components/ui/field";
+import { RefreshButton } from "@/components/ui/refresh-button";
 import { Tabs } from "@/components/ui/tabs";
 import type { Localized } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n/use-lang";
@@ -231,9 +232,11 @@ export default function CurrencyTool() {
           title={t(M.title)}
           subtitle={snapshot ? t(M.updated).replace("{date}", snapshot.date) : t(M.loadingRates)}
           actions={
-            <Button variant="ghost" size="icon" aria-label={t(M.reloadRates)} onClick={() => setReloadKey((k) => k + 1)}>
-              <RefreshCw className="h-4 w-4" />
-            </Button>
+            <RefreshButton
+              onClick={() => setReloadKey((k) => k + 1)}
+              loading={historyLoading}
+              label={t(M.reloadRates)}
+            />
           }
         />
         <CardBody>

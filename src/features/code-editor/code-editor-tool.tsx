@@ -5,7 +5,7 @@ import { javascript } from "@codemirror/lang-javascript";
 import { python } from "@codemirror/lang-python";
 import { vscodeDark, vscodeLight } from "@uiw/codemirror-theme-vscode";
 import CodeMirror from "@uiw/react-codemirror";
-import { Loader2, Play, RotateCcw, Share2, Sparkles, Terminal } from "lucide-react";
+import { Loader2, Play, RotateCcw, Share2, Terminal } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -71,10 +71,6 @@ const M = {
   completionHint: {
     vi: "Gợi ý code kiểu IntelliJ: gõ để hiện popup, Ctrl+Space gọi thủ công. Smart thêm live template (sout, psvm, fori…), API phổ biến và gợi ý sau dấu chấm.",
     en: "IntelliJ-style completion: popup while typing, Ctrl+Space to invoke. Smart adds live templates (sout, psvm, fori…), common APIs and member suggestions after a dot.",
-  },
-  footnote: {
-    vi: "Engine mặc định: Wandbox (OpenJDK 21/22, CPython 3.7–3.14). Với Java, class public ở cấp cao nhất được tự chuyển thành package-private để chạy dạng 1 file — kết quả không đổi. Muốn đầy đủ Java 8–25: tự host Piston và trỏ EXECUTE_API_URL — xem DEPLOYMENT.md.",
-    en: "Default engine: Wandbox (OpenJDK 21/22, CPython 3.7–3.14). For Java, a top-level public class is automatically made package-private so it runs as a single file — output is unchanged. For the full Java 8–25 range: self-host Piston and set EXECUTE_API_URL — see DEPLOYMENT.md.",
   },
 } satisfies Record<string, Localized>;
 
@@ -434,12 +430,6 @@ export default function CodeEditorTool() {
         </div>
       </div>
 
-      <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
-        <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent" />
-        <span>
-          {t(M.completionHint)} {t(M.footnote)}
-        </span>
-      </p>
     </div>
   );
 }

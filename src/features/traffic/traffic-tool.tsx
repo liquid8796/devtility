@@ -1,6 +1,5 @@
 "use client";
 
-import { Database, Eye, RefreshCw } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import {
   Bar,
@@ -14,10 +13,11 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
+import { RefreshButton } from "@/components/ui/refresh-button";
 import { Tabs } from "@/components/ui/tabs";
 import type { Localized } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n/use-lang";
-import { cn, formatNumber } from "@/lib/utils";
+import { formatNumber } from "@/lib/utils";
 
 const M = {
   hour: { vi: "Giờ", en: "Hour" },
@@ -41,11 +41,6 @@ const M = {
   topPages: { vi: "Trang được xem nhiều nhất", en: "Most viewed pages" },
   topPaths: { vi: "Top 10 đường dẫn", en: "Top 10 paths" },
   noData: { vi: "Chưa có dữ liệu.", en: "No data yet." },
-  memoryBackend: {
-    vi: "Bộ nhớ tạm (dev — cấu hình Redis để lưu bền vững)",
-    en: "In-memory (dev — configure Redis for persistence)",
-  },
-  noCookies: { vi: "Đếm theo pageview, không dùng cookie.", en: "Counted per pageview, no cookies." },
 } satisfies Record<string, Localized>;
 
 interface TrafficBucket {
@@ -208,9 +203,7 @@ export default function TrafficTool() {
           actions={
             <div className="flex items-center gap-2">
               <Tabs size="sm" items={periodItems} value={period} onChange={setPeriod} />
-              <Button variant="ghost" size="icon" aria-label={t(M.reload)} onClick={load}>
-                <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
-              </Button>
+              <RefreshButton onClick={load} loading={loading} label={t(M.reload)} />
             </div>
           }
         />
@@ -279,13 +272,6 @@ export default function TrafficTool() {
           )}
         </CardBody>
       </Card>
-
-      <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-        <Database className="h-3.5 w-3.5" />
-        Backend: {stats.backend === "redis" ? "Redis (Upstash)" : t(M.memoryBackend)}
-        <Eye className="ml-3 h-3.5 w-3.5" />
-        {t(M.noCookies)}
-      </p>
     </div>
   );
 }

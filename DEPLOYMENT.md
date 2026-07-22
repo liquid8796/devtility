@@ -77,7 +77,7 @@ Redis dùng cho: **đếm lượt truy cập** theo giờ/ngày/tháng/năm (INC
    - Vercel tự inject `UPSTASH_REDIS_REST_URL` và `UPSTASH_REDIS_REST_TOKEN` (kèm `KV_REST_API_URL`/`KV_REST_API_TOKEN` tùy integration; app nhận cả hai).
 5. **Redeploy**.
 
-Kiểm tra: mở `https://<domain>/tools/insights/traffic` — cuối trang phải hiện **"Backend: Redis (Upstash)"** (thay vì "Bộ nhớ tạm").
+Kiểm tra: mở `https://<domain>/api/stats` — response JSON phải có `"backend":"redis"` (thay vì `"memory"`).
 
 ### Dữ liệu được tổ chức thế nào?
 
@@ -138,7 +138,7 @@ UI tự đọc danh sách version từ `/api/execute/runtimes` — không cần 
 - [ ] Trang chủ hiển thị đủ 12 công cụ, Dark/Light toggle hoạt động.
 - [ ] `/tools/converters/currency` — có tỷ giá + biểu đồ (cần internet ra ngoài, không cần key).
 - [ ] `/tools/technology/code-editor` — chạy thử JavaScript (browser) và Python (Piston).
-- [ ] `/tools/insights/traffic` — hiện "Backend: Redis (Upstash)" sau khi gắn Redis.
+- [ ] `/api/stats` — trả về `"backend":"redis"` sau khi gắn Redis.
 - [ ] Nút **Chia sẻ** trong Code Editor trả về link sau khi gắn Blob.
 - [ ] Mở trên điện thoại: menu drawer, mọi tool dùng được ở 360px.
 
