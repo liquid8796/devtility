@@ -1,6 +1,6 @@
 # DevTility ⚡
 
-**Bộ công cụ tiện ích online cho lập trình viên & người dùng Việt** — chuyển đổi, máy tính, lịch vạn niên, code editor… trong một giao diện hiện đại, mượt mà, hỗ trợ Dark/Light mode và responsive hoàn chỉnh trên mobile.
+**Bộ công cụ tiện ích online cho lập trình viên & người dùng Việt** — chuyển đổi, máy tính, lịch vạn niên, code editor… trong một giao diện hiện đại, mượt mà, hỗ trợ Dark/Light mode, **song ngữ Việt/Anh** và responsive hoàn chỉnh trên mobile.
 
 > 🔗 Deploy trên [Vercel](https://vercel.com) · 📖 Lịch sử thay đổi: [CHANGELOG.md](CHANGELOG.md) · 🚀 Hướng dẫn triển khai: [DEPLOYMENT.md](DEPLOYMENT.md)
 
@@ -25,7 +25,7 @@
 | **Lịch vạn niên** | Âm lịch (thuật toán thiên văn Hồ Ngọc Đức), can chi, tiết khí, giờ hoàng đạo, ngày hoàng/hắc đạo, đổi dương ↔ âm |
 
 ### 💻 Technology
-- **Code Editor Online** — soạn thảo với syntax highlighting (CodeMirror 6), chạy **Java, Python** (server qua Piston) và **JavaScript** (Web Worker sandbox ngay trong trình duyệt), chia sẻ snippet qua Vercel Blob.
+- **Code Editor Online** — soạn thảo với syntax highlighting (CodeMirror 6), **code completion kiểu IntelliJ** (Basic/Smart, live templates `sout`/`psvm`/`fori`, Ctrl+Space), chạy **Java, Python** (server qua Wandbox) và **JavaScript** (Web Worker sandbox ngay trong trình duyệt), chia sẻ snippet qua Vercel Blob.
 
 ### 📊 Thống kê
 - Đếm lượt truy cập theo **giờ / ngày / tháng / năm** (Redis), biểu đồ + top trang được xem nhiều nhất. Không dùng cookie.

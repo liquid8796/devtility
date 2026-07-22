@@ -5,7 +5,7 @@ import { javascript } from "@codemirror/lang-javascript";
 import { python } from "@codemirror/lang-python";
 import { vscodeDark, vscodeLight } from "@uiw/codemirror-theme-vscode";
 import CodeMirror from "@uiw/react-codemirror";
-import { Loader2, Play, RotateCcw, Share2, Terminal } from "lucide-react";
+import { Loader2, Play, RotateCcw, Share2, Sparkles, Terminal } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -13,11 +13,70 @@ import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { CopyButton } from "@/components/ui/copy-button";
 import { Label, Select, TextArea } from "@/components/ui/field";
+import type { Localized } from "@/lib/i18n";
+import { useI18n } from "@/lib/i18n/use-lang";
 import type { StageResult, SupportedLanguage } from "@/server/execute/types";
 import { cn } from "@/lib/utils";
 
+import { completionExtensions, type CompletionMode } from "./completion";
 import { runJavaScriptInBrowser } from "./run-js-in-browser";
 import { LANGUAGE_LABELS, SAMPLES } from "./samples";
+
+const M = {
+  editorTitle: { vi: "Trình soạn thảo", en: "Editor" },
+  subtitleJs: {
+    vi: "JavaScript chạy trực tiếp trong trình duyệt của bạn (Web Worker sandbox)",
+    en: "JavaScript runs right in your browser (Web Worker sandbox)",
+  },
+  subtitleServer: {
+    vi: "Java & Python chạy trên server (engine Wandbox — miễn phí, không cần key)",
+    en: "Java & Python run server-side (Wandbox engine — free, no key required)",
+  },
+  languageAria: { vi: "Ngôn ngữ", en: "Language" },
+  versionAria: { vi: "Phiên bản", en: "Version" },
+  completionAria: { vi: "Chế độ gợi ý code", en: "Code completion mode" },
+  completionOff: { vi: "Tắt gợi ý", en: "No completion" },
+  completionBasic: { vi: "Basic Completion", en: "Basic Completion" },
+  completionSmart: { vi: "Smart Completion", en: "Smart Completion" },
+  editorAria: { vi: "Vùng soạn thảo code", en: "Code editing area" },
+  run: { vi: "Chạy code", en: "Run code" },
+  sample: { vi: "Code mẫu", en: "Sample code" },
+  share: { vi: "Chia sẻ", en: "Share" },
+  copyCode: { vi: "Sao chép code", en: "Copy code" },
+  stdinLabel: { vi: "Stdin (đầu vào chương trình)", en: "Stdin (program input)" },
+  stdinPlaceholderJs: {
+    vi: "JavaScript trong trình duyệt không dùng stdin",
+    en: "In-browser JavaScript does not use stdin",
+  },
+  stdinPlaceholder: { vi: "Mỗi dòng một giá trị…", en: "One value per line…" },
+  outputEmpty: {
+    vi: "Nhấn “Chạy code” để xem kết quả tại đây.",
+    en: "Press “Run code” to see the result here.",
+  },
+  copyOutput: { vi: "Sao chép output", en: "Copy output" },
+  running: { vi: "Đang chạy…", en: "Running…" },
+  noOutput: { vi: "(không có output)", en: "(no output)" },
+  snippetLoaded: { vi: "Đã tải snippet được chia sẻ.", en: "Loaded the shared snippet." },
+  snippetFailed: {
+    vi: "Không tải được snippet (đã hết hạn hoặc sai link).",
+    en: "Could not load the snippet (expired or invalid link).",
+  },
+  execFailed: {
+    vi: "Không kết nối được máy chủ thực thi. Vui lòng thử lại.",
+    en: "Could not reach the execution server. Please try again.",
+  },
+  shareFailed: { vi: "Không chia sẻ được snippet.", en: "Could not share the snippet." },
+  shareCopied: { vi: "Đã sao chép link chia sẻ:", en: "Share link copied:" },
+  serverError: { vi: "Lỗi máy chủ", en: "Server error" },
+  completionHint: {
+    vi: "Gợi ý code kiểu IntelliJ: gõ để hiện popup, Ctrl+Space gọi thủ công. Smart thêm live template (sout, psvm, fori…), API phổ biến và gợi ý sau dấu chấm.",
+    en: "IntelliJ-style completion: popup while typing, Ctrl+Space to invoke. Smart adds live templates (sout, psvm, fori…), common APIs and member suggestions after a dot.",
+  },
+  footnote: {
+    vi: "Engine mặc định: Wandbox (OpenJDK 21/22, CPython 3.7–3.14). Với Java, class public ở cấp cao nhất được tự chuyển thành package-private để chạy dạng 1 file — kết quả không đổi. Muốn đầy đủ Java 8–25: tự host Piston và trỏ EXECUTE_API_URL — xem DEPLOYMENT.md.",
+    en: "Default engine: Wandbox (OpenJDK 21/22, CPython 3.7–3.14). For Java, a top-level public class is automatically made package-private so it runs as a single file — output is unchanged. For the full Java 8–25 range: self-host Piston and set EXECUTE_API_URL — see DEPLOYMENT.md.",
+  },
+} satisfies Record<string, Localized>;
 
 interface RuntimeInfo {
   language: SupportedLanguage;
@@ -31,6 +90,7 @@ interface OutputLine {
 }
 
 const LANGUAGES: SupportedLanguage[] = ["java", "python", "javascript"];
+const COMPLETION_STORAGE_KEY = "devtility.editor.completion";
 
 function languageExtension(language: SupportedLanguage) {
   switch (language) {
@@ -51,12 +111,25 @@ function stageToLines(stage: StageResult | undefined, prefix: string): OutputLin
   return lines;
 }
 
+function initialCompletionMode(): CompletionMode {
+  // Client-only component (ssr: false) — safe to read localStorage in the initializer
+  try {
+    const stored = window.localStorage.getItem(COMPLETION_STORAGE_KEY);
+    if (stored === "off" || stored === "basic" || stored === "smart") return stored;
+  } catch {
+    // ignore
+  }
+  return "smart";
+}
+
 export default function CodeEditorTool() {
   const { resolvedTheme } = useTheme();
+  const { t, lang } = useI18n();
   const [language, setLanguage] = useState<SupportedLanguage>("java");
   const [codeByLanguage, setCodeByLanguage] = useState<Record<SupportedLanguage, string>>({ ...SAMPLES });
   const [runtimes, setRuntimes] = useState<RuntimeInfo[]>([]);
   const [version, setVersion] = useState<string>("*");
+  const [completionMode, setCompletionMode] = useState<CompletionMode>(initialCompletionMode);
   const [stdin, setStdin] = useState("");
   const [output, setOutput] = useState<OutputLine[]>([]);
   const [running, setRunning] = useState(false);
@@ -65,6 +138,20 @@ export default function CodeEditorTool() {
   const outputRef = useRef<HTMLDivElement>(null);
 
   const code = codeByLanguage[language];
+
+  const editorExtensions = useMemo(
+    () => [languageExtension(language), ...completionExtensions(language, completionMode)],
+    [language, completionMode],
+  );
+
+  const changeCompletionMode = (mode: CompletionMode) => {
+    setCompletionMode(mode);
+    try {
+      window.localStorage.setItem(COMPLETION_STORAGE_KEY, mode);
+    } catch {
+      // ignore
+    }
+  };
 
   // ---- available runtimes (server execution) ----
   useEffect(() => {
@@ -81,14 +168,15 @@ export default function CodeEditorTool() {
     fetch(`/api/snippets/${encodeURIComponent(id)}`)
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
       .then((snippet: { language: string; code: string }) => {
-        const lang = LANGUAGES.includes(snippet.language as SupportedLanguage)
+        const snippetLang = LANGUAGES.includes(snippet.language as SupportedLanguage)
           ? (snippet.language as SupportedLanguage)
           : "javascript";
-        setLanguage(lang);
-        setCodeByLanguage((prev) => ({ ...prev, [lang]: snippet.code }));
-        setOutput([{ kind: "meta", text: "Đã tải snippet được chia sẻ." }]);
+        setLanguage(snippetLang);
+        setCodeByLanguage((prev) => ({ ...prev, [snippetLang]: snippet.code }));
+        setOutput([{ kind: "meta", text: t(M.snippetLoaded) }]);
       })
-      .catch(() => setOutput([{ kind: "meta", text: "Không tải được snippet (đã hết hạn hoặc sai link)." }]));
+      .catch(() => setOutput([{ kind: "meta", text: t(M.snippetFailed) }]));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot on mount; message language fixed at load time
   }, []);
 
   const versionsForLanguage = useMemo(
@@ -104,7 +192,7 @@ export default function CodeEditorTool() {
 
   const run = async () => {
     setRunning(true);
-    setOutput([{ kind: "meta", text: "Đang chạy…" }]);
+    setOutput([{ kind: "meta", text: t(M.running) }]);
     try {
       if (language === "javascript") {
         const result = await runJavaScriptInBrowser(code);
@@ -113,7 +201,13 @@ export default function CodeEditorTool() {
           text: l.text,
         }));
         if (result.error) lines.push({ kind: "stderr", text: result.error });
-        lines.push({ kind: "meta", text: `Hoàn tất trong ${result.durationMs}ms (chạy trong trình duyệt)` });
+        lines.push({
+          kind: "meta",
+          text:
+            lang === "vi"
+              ? `Hoàn tất trong ${result.durationMs}ms (chạy trong trình duyệt)`
+              : `Finished in ${result.durationMs}ms (ran in the browser)`,
+        });
         setOutput(lines);
       } else {
         const res = await fetch("/api/execute", {
@@ -128,13 +222,13 @@ export default function CodeEditorTool() {
           version?: string;
         };
         if (!res.ok || !data.run) {
-          setOutput([{ kind: "stderr", text: data.error ?? `Lỗi máy chủ (${res.status})` }]);
+          setOutput([{ kind: "stderr", text: data.error ?? `${t(M.serverError)} (${res.status})` }]);
         } else {
           const lines = [
             ...stageToLines(data.compile, "[compile] "),
             ...stageToLines(data.run, ""),
           ];
-          if (lines.length === 0) lines.push({ kind: "meta", text: "(không có output)" });
+          if (lines.length === 0) lines.push({ kind: "meta", text: t(M.noOutput) });
           lines.push({
             kind: "meta",
             text: `Exit code: ${data.run.code ?? "?"} · ${LANGUAGE_LABELS[language]} ${data.version ?? effectiveVersion}`,
@@ -143,7 +237,7 @@ export default function CodeEditorTool() {
         }
       }
     } catch {
-      setOutput([{ kind: "stderr", text: "Không kết nối được máy chủ thực thi. Vui lòng thử lại." }]);
+      setOutput([{ kind: "stderr", text: t(M.execFailed) }]);
     } finally {
       setRunning(false);
       outputRef.current?.scrollTo({ top: 0 });
@@ -162,16 +256,16 @@ export default function CodeEditorTool() {
       const data = (await res.json()) as { id?: string; error?: string };
       if (!res.ok || !data.id) {
         setShareState("error");
-        setShareMessage(data.error ?? "Không chia sẻ được snippet.");
+        setShareMessage(data.error ?? t(M.shareFailed));
         return;
       }
       const url = `${window.location.origin}${window.location.pathname}?snippet=${data.id}`;
       await navigator.clipboard.writeText(url).catch(() => undefined);
       setShareState("done");
-      setShareMessage(`Đã sao chép link chia sẻ: ${url}`);
+      setShareMessage(`${t(M.shareCopied)} ${url}`);
     } catch {
       setShareState("error");
-      setShareMessage("Không chia sẻ được snippet.");
+      setShareMessage(t(M.shareFailed));
     }
   };
 
@@ -181,16 +275,23 @@ export default function CodeEditorTool() {
         {/* ---- Editor ---- */}
         <Card className="min-w-0">
           <CardHeader
-            title="Trình soạn thảo"
-            subtitle={
-              language === "javascript"
-                ? "JavaScript chạy trực tiếp trong trình duyệt của bạn (Web Worker sandbox)"
-                : "Java & Python chạy trên server (engine Wandbox — miễn phí, không cần key)"
-            }
+            title={t(M.editorTitle)}
+            subtitle={language === "javascript" ? t(M.subtitleJs) : t(M.subtitleServer)}
             actions={
               <div className="flex flex-wrap items-center gap-2">
                 <Select
-                  aria-label="Ngôn ngữ"
+                  aria-label={t(M.completionAria)}
+                  title={t(M.completionHint)}
+                  className="h-8 w-40 text-xs"
+                  value={completionMode}
+                  onChange={(e) => changeCompletionMode(e.target.value as CompletionMode)}
+                >
+                  <option value="off">{t(M.completionOff)}</option>
+                  <option value="basic">{t(M.completionBasic)}</option>
+                  <option value="smart">{t(M.completionSmart)}</option>
+                </Select>
+                <Select
+                  aria-label={t(M.languageAria)}
                   className="h-8 w-36 text-xs"
                   value={language}
                   onChange={(e) => setLanguage(e.target.value as SupportedLanguage)}
@@ -203,7 +304,7 @@ export default function CodeEditorTool() {
                 </Select>
                 {language !== "javascript" ? (
                   <Select
-                    aria-label="Phiên bản"
+                    aria-label={t(M.versionAria)}
                     className="h-8 w-28 text-xs"
                     value={effectiveVersion}
                     onChange={(e) => setVersion(e.target.value)}
@@ -229,23 +330,27 @@ export default function CodeEditorTool() {
               onChange={(value) =>
                 setCodeByLanguage((prev) => (prev[language] === value ? prev : { ...prev, [language]: value }))
               }
-              extensions={[languageExtension(language)]}
+              extensions={editorExtensions}
               theme={resolvedTheme === "dark" ? vscodeDark : vscodeLight}
               height="420px"
-              basicSetup={{ tabSize: language === "python" ? 4 : 2 }}
-              aria-label="Vùng soạn thảo code"
+              basicSetup={{
+                tabSize: language === "python" ? 4 : 2,
+                autocompletion: false,
+                completionKeymap: false,
+              }}
+              aria-label={t(M.editorAria)}
             />
             <div className="flex flex-wrap items-center gap-2 border-t border-border px-4 py-3">
               <Button onClick={run} disabled={running} size="md">
                 {running ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
-                Chạy code
+                {t(M.run)}
               </Button>
               <Button
                 variant="outline"
                 onClick={() => setCodeByLanguage((prev) => ({ ...prev, [language]: SAMPLES[language] }))}
               >
                 <RotateCcw className="h-4 w-4" />
-                Code mẫu
+                {t(M.sample)}
               </Button>
               <Button variant="outline" onClick={share} disabled={shareState === "saving"}>
                 {shareState === "saving" ? (
@@ -253,10 +358,10 @@ export default function CodeEditorTool() {
                 ) : (
                   <Share2 className="h-4 w-4" />
                 )}
-                Chia sẻ
+                {t(M.share)}
               </Button>
               <div className="ml-auto">
-                <CopyButton text={code} label="Sao chép code" />
+                <CopyButton text={code} label={t(M.copyCode)} />
               </div>
             </div>
             {shareMessage ? (
@@ -276,15 +381,13 @@ export default function CodeEditorTool() {
         <div className="flex min-w-0 flex-col gap-4">
           <Card>
             <CardBody>
-              <Label htmlFor="editor-stdin">Stdin (đầu vào chương trình)</Label>
+              <Label htmlFor="editor-stdin">{t(M.stdinLabel)}</Label>
               <TextArea
                 id="editor-stdin"
                 rows={3}
                 value={stdin}
                 onChange={(e) => setStdin(e.target.value)}
-                placeholder={
-                  language === "javascript" ? "JavaScript trong trình duyệt không dùng stdin" : "Mỗi dòng một giá trị…"
-                }
+                placeholder={language === "javascript" ? t(M.stdinPlaceholderJs) : t(M.stdinPlaceholder)}
                 disabled={language === "javascript"}
               />
             </CardBody>
@@ -299,7 +402,7 @@ export default function CodeEditorTool() {
               }
               actions={
                 output.length > 0 ? (
-                  <CopyButton text={output.map((l) => l.text).join("\n")} label="Sao chép output" />
+                  <CopyButton text={output.map((l) => l.text).join("\n")} label={t(M.copyOutput)} />
                 ) : undefined
               }
             />
@@ -311,7 +414,7 @@ export default function CodeEditorTool() {
                 aria-live="polite"
               >
                 {output.length === 0 ? (
-                  <span className="text-muted-foreground">Nhấn “Chạy code” để xem kết quả tại đây.</span>
+                  <span className="text-muted-foreground">{t(M.outputEmpty)}</span>
                 ) : (
                   output.map((line, i) => (
                     <div
@@ -331,11 +434,11 @@ export default function CodeEditorTool() {
         </div>
       </div>
 
-      <p className="text-xs text-muted-foreground">
-        Engine mặc định: Wandbox (OpenJDK 21/22, CPython 3.7–3.14). Với Java, class{" "}
-        <code className="font-mono">public</code> ở cấp cao nhất được tự chuyển thành package-private để chạy dạng
-        1 file — kết quả không đổi. Muốn đầy đủ Java 8–25: tự host Piston và trỏ{" "}
-        <code className="font-mono">EXECUTE_API_URL</code> — xem DEPLOYMENT.md.
+      <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
+        <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent" />
+        <span>
+          {t(M.completionHint)} {t(M.footnote)}
+        </span>
       </p>
     </div>
   );
