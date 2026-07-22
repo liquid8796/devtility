@@ -58,9 +58,9 @@ export function formatDecimal(value: Decimal, dp = 10): string {
   return fixed.toString();
 }
 
-/** Format with Vietnamese thousands separators (1.234.567,89). */
-export function formatDecimalVN(value: Decimal, dp = 2): string {
+/** Format with locale thousands separators (default vi-VN: 1.234.567,89). */
+export function formatDecimalVN(value: Decimal, dp = 2, locale = "vi-VN"): string {
   if (!value.isFinite()) return "—";
   const n = value.toDecimalPlaces(dp, Decimal.ROUND_HALF_UP).toNumber();
-  return new Intl.NumberFormat("vi-VN", { maximumFractionDigits: dp }).format(n);
+  return new Intl.NumberFormat(locale, { maximumFractionDigits: dp }).format(n);
 }

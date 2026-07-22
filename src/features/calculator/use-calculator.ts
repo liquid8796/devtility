@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useReducer } from "react";
 
+import type { Localized } from "@/lib/i18n";
+import { useI18n } from "@/lib/i18n/use-lang";
 import { Decimal, dec, formatDecimal } from "@/lib/math/decimal";
 
 import { evaluateExpression, type AngleMode } from "./engine";
@@ -27,7 +29,7 @@ interface CalcState {
   expr: string;
   /** Number currently being typed. */
   entry: string;
-  error: string | null;
+  error: Localized | null;
   /** Raw Decimal string of the last "=" result. */
   result: string | null;
   /** Expression that produced `result` (shown as "… =" after evaluating). */
@@ -411,6 +413,7 @@ function lastValueHint(expr: string): string {
 }
 
 export function useCalculator() {
+  const { t } = useI18n();
   const [state, dispatch] = useReducer(reducer, initialState);
 
   // Hydrate history + memory from localStorage (client only, after mount).
@@ -486,7 +489,7 @@ export function useCalculator() {
   }, []);
 
   const displayValue = state.error
-    ? state.error
+    ? t(state.error)
     : state.justEvaluated && state.result !== null
       ? formatRaw(state.result)
       : state.entry || lastValueHint(state.expr);

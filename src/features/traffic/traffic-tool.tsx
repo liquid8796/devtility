@@ -15,7 +15,38 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { Tabs } from "@/components/ui/tabs";
+import type { Localized } from "@/lib/i18n";
+import { useI18n } from "@/lib/i18n/use-lang";
 import { cn, formatNumber } from "@/lib/utils";
+
+const M = {
+  hour: { vi: "Giờ", en: "Hour" },
+  day: { vi: "Ngày", en: "Day" },
+  month: { vi: "Tháng", en: "Month" },
+  year: { vi: "Năm", en: "Year" },
+  last24h: { vi: "24 giờ gần nhất", en: "Last 24 hours" },
+  last30d: { vi: "30 ngày gần nhất", en: "Last 30 days" },
+  last12m: { vi: "12 tháng gần nhất", en: "Last 12 months" },
+  last5y: { vi: "5 năm gần nhất", en: "Last 5 years" },
+  totalViews: { vi: "Tổng lượt xem", en: "Total views" },
+  sinceLaunch: { vi: "Từ khi triển khai", en: "Since launch" },
+  today: { vi: "Hôm nay", en: "Today" },
+  timezone: { vi: "Múi giờ {tz}", en: "Timezone {tz}" },
+  thisMonth: { vi: "Tháng này", en: "This month" },
+  visits: { vi: "Lượt truy cập", en: "Visits" },
+  reload: { vi: "Tải lại", en: "Reload" },
+  views: { vi: "lượt xem", en: "views" },
+  loadError: { vi: "Không tải được thống kê. Vui lòng thử lại.", en: "Could not load stats. Please try again." },
+  retry: { vi: "Thử lại", en: "Retry" },
+  topPages: { vi: "Trang được xem nhiều nhất", en: "Most viewed pages" },
+  topPaths: { vi: "Top 10 đường dẫn", en: "Top 10 paths" },
+  noData: { vi: "Chưa có dữ liệu.", en: "No data yet." },
+  memoryBackend: {
+    vi: "Bộ nhớ tạm (dev — cấu hình Redis để lưu bền vững)",
+    en: "In-memory (dev — configure Redis for persistence)",
+  },
+  noCookies: { vi: "Đếm theo pageview, không dùng cookie.", en: "Counted per pageview, no cookies." },
+} satisfies Record<string, Localized>;
 
 interface TrafficBucket {
   key: string;
@@ -36,18 +67,18 @@ interface TrafficStats {
 
 type Period = "hourly" | "daily" | "monthly" | "yearly";
 
-const PERIOD_ITEMS: Array<{ value: Period; label: string }> = [
-  { value: "hourly", label: "Giờ" },
-  { value: "daily", label: "Ngày" },
-  { value: "monthly", label: "Tháng" },
-  { value: "yearly", label: "Năm" },
+const PERIOD_ITEMS: Array<{ value: Period; label: Localized }> = [
+  { value: "hourly", label: M.hour },
+  { value: "daily", label: M.day },
+  { value: "monthly", label: M.month },
+  { value: "yearly", label: M.year },
 ];
 
-const PERIOD_TITLES: Record<Period, string> = {
-  hourly: "24 giờ gần nhất",
-  daily: "30 ngày gần nhất",
-  monthly: "12 tháng gần nhất",
-  yearly: "5 năm gần nhất",
+const PERIOD_TITLES: Record<Period, Localized> = {
+  hourly: M.last24h,
+  daily: M.last30d,
+  monthly: M.last12m,
+  yearly: M.last5y,
 };
 
 function StatTile({ label, value, hint }: { label: string; value: string; hint?: string }) {
@@ -67,18 +98,22 @@ function ChartTooltip({
   active?: boolean;
   payload?: Array<{ value?: number | string; payload?: TrafficBucket }>;
 }) {
+  const { t, locale } = useI18n();
   if (!active || !payload?.length) return null;
   const bucket = payload[0]?.payload;
   if (!bucket) return null;
   return (
     <div className="card-surface px-3 py-2 text-xs shadow-lg">
       <p className="text-muted-foreground">{bucket.label}</p>
-      <p className="mt-0.5 font-mono font-semibold">{formatNumber(bucket.count)} lượt xem</p>
+      <p className="mt-0.5 font-mono font-semibold">
+        {formatNumber(bucket.count, undefined, locale)} {t(M.views)}
+      </p>
     </div>
   );
 }
 
 export default function TrafficTool() {
+  const { t, locale } = useI18n();
   const [period, setPeriod] = useState<Period>("hourly");
   const [reloadKey, setReloadKey] = useState(0);
   // Result is tagged with the request key it answers; loading/error derive from it
@@ -92,12 +127,18 @@ export default function TrafficTool() {
         if (!cancelled) setResult({ key: reloadKey, stats: data });
       })
       .catch(() => {
-        if (!cancelled) setResult({ key: reloadKey, error: "Không tải được thống kê. Vui lòng thử lại." });
+        // Stored message doubles as the error flag; render translates via t(M.loadError).
+        if (!cancelled) setResult({ key: reloadKey, error: M.loadError.vi });
       });
     return () => {
       cancelled = true;
     };
   }, [reloadKey]);
+
+  const periodItems = useMemo(
+    () => PERIOD_ITEMS.map((item) => ({ value: item.value, label: t(item.label) })),
+    [t],
+  );
 
   const stats = result?.stats ?? null;
   const loading = result?.key !== reloadKey;
@@ -119,9 +160,9 @@ export default function TrafficTool() {
   if (error) {
     return (
       <div className="card-surface flex flex-col items-center gap-3 p-10 text-sm text-muted-foreground">
-        {error}
+        {t(M.loadError)}
         <Button variant="outline" size="sm" onClick={load}>
-          Thử lại
+          {t(M.retry)}
         </Button>
       </div>
     );
@@ -146,20 +187,28 @@ export default function TrafficTool() {
     <div className="space-y-4">
       {/* ---- Overview tiles ---- */}
       <div className="grid gap-3 sm:grid-cols-3">
-        <StatTile label="Tổng lượt xem" value={formatNumber(stats.totalViews)} hint="Từ khi triển khai" />
-        <StatTile label="Hôm nay" value={formatNumber(today)} hint={`Múi giờ ${stats.timezone}`} />
-        <StatTile label="Tháng này" value={formatNumber(thisMonth)} />
+        <StatTile
+          label={t(M.totalViews)}
+          value={formatNumber(stats.totalViews, undefined, locale)}
+          hint={t(M.sinceLaunch)}
+        />
+        <StatTile
+          label={t(M.today)}
+          value={formatNumber(today, undefined, locale)}
+          hint={t(M.timezone).replace("{tz}", stats.timezone)}
+        />
+        <StatTile label={t(M.thisMonth)} value={formatNumber(thisMonth, undefined, locale)} />
       </div>
 
       {/* ---- Chart ---- */}
       <Card>
         <CardHeader
-          title="Lượt truy cập"
-          subtitle={PERIOD_TITLES[period]}
+          title={t(M.visits)}
+          subtitle={t(PERIOD_TITLES[period])}
           actions={
             <div className="flex items-center gap-2">
-              <Tabs size="sm" items={PERIOD_ITEMS} value={period} onChange={setPeriod} />
-              <Button variant="ghost" size="icon" aria-label="Tải lại" onClick={load}>
+              <Tabs size="sm" items={periodItems} value={period} onChange={setPeriod} />
+              <Button variant="ghost" size="icon" aria-label={t(M.reload)} onClick={load}>
                 <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
               </Button>
             </div>
@@ -200,10 +249,10 @@ export default function TrafficTool() {
 
       {/* ---- Top pages ---- */}
       <Card>
-        <CardHeader title="Trang được xem nhiều nhất" subtitle="Top 10 đường dẫn" />
+        <CardHeader title={t(M.topPages)} subtitle={t(M.topPaths)} />
         <CardBody className="px-0 pb-2 pt-0">
           {stats.topPaths.length === 0 ? (
-            <p className="px-5 py-6 text-sm text-muted-foreground">Chưa có dữ liệu.</p>
+            <p className="px-5 py-6 text-sm text-muted-foreground">{t(M.noData)}</p>
           ) : (
             <table className="w-full text-sm">
               <tbody>
@@ -220,7 +269,9 @@ export default function TrafficTool() {
                         <span className="relative block truncate px-2 font-mono text-xs">{p.path}</span>
                       </div>
                     </td>
-                    <td className="w-24 py-2.5 pr-5 text-right font-mono text-xs">{formatNumber(p.count)}</td>
+                    <td className="w-24 py-2.5 pr-5 text-right font-mono text-xs">
+                      {formatNumber(p.count, undefined, locale)}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -231,9 +282,9 @@ export default function TrafficTool() {
 
       <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
         <Database className="h-3.5 w-3.5" />
-        Backend: {stats.backend === "redis" ? "Redis (Upstash)" : "Bộ nhớ tạm (dev — cấu hình Redis để lưu bền vững)"}
+        Backend: {stats.backend === "redis" ? "Redis (Upstash)" : t(M.memoryBackend)}
         <Eye className="ml-3 h-3.5 w-3.5" />
-        Đếm theo pageview, không dùng cookie.
+        {t(M.noCookies)}
       </p>
     </div>
   );

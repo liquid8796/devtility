@@ -1,11 +1,12 @@
+import type { Localized } from "@/lib/i18n";
 import { Decimal } from "@/lib/math/decimal";
 
 /**
  * Pure helpers for converting numbers between positional bases (2–36) and for
  * converting text to/from raw UTF-8 bytes rendered in various bases.
  *
- * All error messages are user-facing Vietnamese strings so UI components can
- * surface them directly.
+ * All error messages are user-facing `Localized` objects (vi/en) so UI
+ * components can surface them directly via `t(...)`.
  */
 
 /** Digit alphabet for bases up to 36 (lowercase canonical form). */
@@ -24,11 +25,17 @@ export type Result =
       /** True when the fractional part was cut off at {@link MAX_FRACTION_DIGITS} digits. */
       truncated?: boolean;
     }
-  | { ok: false; error: string };
+  | { ok: false; error: Localized };
 
-function err(error: string): Result {
+function err(error: Localized): Result {
   return { ok: false, error };
 }
+
+/** Shared "empty input" message. */
+const EMPTY_VALUE: Localized = {
+  vi: "Vui lòng nhập giá trị cần chuyển đổi.",
+  en: "Please enter a value to convert.",
+};
 
 /** Returns true when `base` is an integer within [2, 36]. */
 export function isValidBase(base: number): boolean {
@@ -53,13 +60,19 @@ function digitValue(ch: string): number {
  */
 export function convertBase(value: string, fromBase: number, toBase: number): Result {
   if (!isValidBase(fromBase) || !isValidBase(toBase)) {
-    return err("Hệ cơ số phải là số nguyên từ 2 đến 36.");
+    return err({
+      vi: "Hệ cơ số phải là số nguyên từ 2 đến 36.",
+      en: "The base must be an integer between 2 and 36.",
+    });
   }
 
   let s = value.trim().toLowerCase();
-  if (!s) return err("Vui lòng nhập giá trị cần chuyển đổi.");
+  if (!s) return err(EMPTY_VALUE);
   if (s.length > MAX_INPUT_LENGTH) {
-    return err("Giá trị quá dài (tối đa 10.000 ký tự).");
+    return err({
+      vi: "Giá trị quá dài (tối đa 10.000 ký tự).",
+      en: "The value is too long (maximum 10,000 characters).",
+    });
   }
 
   // Optional sign
@@ -71,24 +84,30 @@ export function convertBase(value: string, fromBase: number, toBase: number): Re
 
   // Allow digit grouping with spaces / underscores ("1010 1010", "ff_ff")
   s = s.replace(/[\s_]/g, "");
-  if (!s) return err("Vui lòng nhập giá trị cần chuyển đổi.");
+  if (!s) return err(EMPTY_VALUE);
 
   if ((s.match(/\./g) ?? []).length > 1) {
-    return err("Giá trị chỉ được chứa tối đa một dấu chấm thập phân.");
+    return err({
+      vi: "Giá trị chỉ được chứa tối đa một dấu chấm thập phân.",
+      en: "The value may contain at most one decimal point.",
+    });
   }
 
   const dotIndex = s.indexOf(".");
   const intRaw = dotIndex === -1 ? s : s.slice(0, dotIndex);
   const fracRaw = dotIndex === -1 ? "" : s.slice(dotIndex + 1);
   if (!intRaw && !fracRaw) {
-    return err("Vui lòng nhập giá trị cần chuyển đổi.");
+    return err(EMPTY_VALUE);
   }
 
   // Validate every digit against the source base
   for (const ch of intRaw + fracRaw) {
     const d = digitValue(ch);
     if (d === -1 || d >= fromBase) {
-      return err(`Ký tự không hợp lệ cho hệ cơ số ${fromBase}: "${ch}"`);
+      return err({
+        vi: `Ký tự không hợp lệ cho hệ cơ số ${fromBase}: "${ch}"`,
+        en: `Invalid character for base ${fromBase}: "${ch}"`,
+      });
     }
   }
 
@@ -144,19 +163,25 @@ export function textToBytes(text: string): number[] {
 
 /**
  * Decode a UTF-8 byte sequence back into text. Uses a fatal decoder so an
- * invalid sequence yields a friendly Vietnamese error instead of U+FFFD noise.
+ * invalid sequence yields a friendly localized error instead of U+FFFD noise.
  */
 export function bytesToText(bytes: number[]): Result {
   for (const b of bytes) {
     if (!Number.isInteger(b) || b < 0 || b > 255) {
-      return err("Danh sách byte chứa giá trị nằm ngoài phạm vi 0–255.");
+      return err({
+        vi: "Danh sách byte chứa giá trị nằm ngoài phạm vi 0–255.",
+        en: "The byte list contains a value outside the 0–255 range.",
+      });
     }
   }
   try {
     const decoder = new TextDecoder("utf-8", { fatal: true });
     return { ok: true, value: decoder.decode(new Uint8Array(bytes)) };
   } catch {
-    return err("Chuỗi byte không phải là UTF-8 hợp lệ nên không thể giải mã thành văn bản.");
+    return err({
+      vi: "Chuỗi byte không phải là UTF-8 hợp lệ nên không thể giải mã thành văn bản.",
+      en: "The byte sequence is not valid UTF-8, so it cannot be decoded into text.",
+    });
   }
 }
 
@@ -202,18 +227,30 @@ const BYTE_TOKEN_PATTERNS: Record<ByteBase, RegExp> = {
 export function parseByteString(
   input: string,
   base: ByteBase,
-): { ok: true; bytes: number[] } | { ok: false; error: string } {
+): { ok: true; bytes: number[] } | { ok: false; error: Localized } {
   const tokens = input.trim().split(/[\s,;]+/).filter(Boolean);
   const bytes: number[] = [];
   for (const raw of tokens) {
     let tok = raw.toLowerCase();
     if (base === 16 && tok.startsWith("0x")) tok = tok.slice(2);
     if (!tok || !BYTE_TOKEN_PATTERNS[base].test(tok)) {
-      return { ok: false, error: `Giá trị "${raw}" không hợp lệ cho hệ cơ số ${base}.` };
+      return {
+        ok: false,
+        error: {
+          vi: `Giá trị "${raw}" không hợp lệ cho hệ cơ số ${base}.`,
+          en: `The value "${raw}" is not valid for base ${base}.`,
+        },
+      };
     }
     const n = parseInt(tok, base);
     if (n > 255) {
-      return { ok: false, error: `Giá trị "${raw}" vượt quá phạm vi một byte (0–255).` };
+      return {
+        ok: false,
+        error: {
+          vi: `Giá trị "${raw}" vượt quá phạm vi một byte (0–255).`,
+          en: `The value "${raw}" exceeds the range of a single byte (0–255).`,
+        },
+      };
     }
     bytes.push(n);
   }

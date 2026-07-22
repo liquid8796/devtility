@@ -17,10 +17,41 @@ import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { CopyButton } from "@/components/ui/copy-button";
 import { Field, Select, TextInput } from "@/components/ui/field";
 import { Tabs } from "@/components/ui/tabs";
+import type { Localized } from "@/lib/i18n";
+import { useI18n } from "@/lib/i18n/use-lang";
 import { dec, parseDecimal } from "@/lib/math/decimal";
 import { cn } from "@/lib/utils";
 
 import { formatCompact, formatRate, POPULAR_CRYPTO, POPULAR_FIAT } from "./format";
+
+const M = {
+  title: { vi: "Chuyển đổi tiền tệ", en: "Currency converter" },
+  updated: {
+    vi: "Cập nhật: {date} · nguồn mở fawazahmed0/exchange-api",
+    en: "Updated: {date} · open-source fawazahmed0/exchange-api",
+  },
+  loadingRates: { vi: "Đang tải tỷ giá…", en: "Loading rates…" },
+  reloadRates: { vi: "Tải lại tỷ giá", en: "Reload rates" },
+  amount: { vi: "Số tiền", en: "Amount" },
+  from: { vi: "Từ", en: "From" },
+  to: { vi: "Sang", en: "To" },
+  swap: { vi: "Đảo chiều chuyển đổi", en: "Swap conversion direction" },
+  popular: { vi: "Phổ biến", en: "Popular" },
+  all: { vi: "Tất cả", en: "All" },
+  invalidAmount: { vi: "Nhập số tiền hợp lệ để chuyển đổi.", en: "Enter a valid amount to convert." },
+  copyResult: { vi: "Sao chép kết quả", en: "Copy result" },
+  rateError: { vi: "Không lấy được tỷ giá. Vui lòng thử lại.", en: "Could not fetch rates. Please try again." },
+  chartError: { vi: "Không tải được dữ liệu biểu đồ.", en: "Could not load chart data." },
+  retry: { vi: "Thử lại", en: "Retry" },
+  chartTitle: { vi: "Biểu đồ {pair}", en: "{pair} chart" },
+  pctInRange: { vi: "% trong khoảng đã chọn", en: "% over selected range" },
+  dailyClose: { vi: "Tỷ giá đóng cửa theo ngày", en: "Daily closing rate" },
+  noHistory: { vi: "Chưa có dữ liệu lịch sử cho cặp tiền này.", en: "No historical data for this pair yet." },
+  disclaimer: {
+    vi: "Dữ liệu tổng hợp từ nguồn mở, cập nhật theo ngày — chỉ mang tính tham khảo, không phải tư vấn đầu tư.",
+    en: "Data aggregated from open sources, updated daily — for reference only, not investment advice.",
+  },
+} satisfies Record<string, Localized>;
 
 interface CurrencyInfo {
   code: string;
@@ -48,6 +79,7 @@ const RANGE_ITEMS: Array<{ value: Range; label: string }> = [
 ];
 
 function CurrencyOptions({ currencies }: { currencies: CurrencyInfo[] }) {
+  const { t } = useI18n();
   const byCode = useMemo(() => new Map(currencies.map((c) => [c.code, c])), [currencies]);
   const popular = [...POPULAR_FIAT, ...POPULAR_CRYPTO].filter((c) => byCode.has(c));
   const popularSet = new Set(popular);
@@ -63,8 +95,8 @@ function CurrencyOptions({ currencies }: { currencies: CurrencyInfo[] }) {
 
   return (
     <>
-      <optgroup label="Phổ biến">{popular.map((code) => render(byCode.get(code)!))}</optgroup>
-      <optgroup label="Tất cả">{rest.map(render)}</optgroup>
+      <optgroup label={t(M.popular)}>{popular.map((code) => render(byCode.get(code)!))}</optgroup>
+      <optgroup label={t(M.all)}>{rest.map(render)}</optgroup>
     </>
   );
 }
@@ -78,6 +110,7 @@ function ChartTooltip({
   payload?: Array<{ value?: number | string; payload?: HistoryPoint }>;
   quote: string;
 }) {
+  const { locale } = useI18n();
   if (!active || !payload?.length) return null;
   const point = payload[0]?.payload;
   if (!point) return null;
@@ -85,13 +118,14 @@ function ChartTooltip({
     <div className="card-surface px-3 py-2 text-xs shadow-lg">
       <p className="text-muted-foreground">{point.date}</p>
       <p className="mt-0.5 font-mono font-semibold">
-        {formatRate(point.rate)} <span className="text-muted-foreground">{quote.toUpperCase()}</span>
+        {formatRate(point.rate, locale)} <span className="text-muted-foreground">{quote.toUpperCase()}</span>
       </p>
     </div>
   );
 }
 
 export default function CurrencyTool() {
+  const { t, locale } = useI18n();
   const [currencies, setCurrencies] = useState<CurrencyInfo[]>([]);
   const [amountRaw, setAmountRaw] = useState("1");
   const [from, setFrom] = useState("usd");
@@ -138,7 +172,8 @@ export default function CurrencyTool() {
       .then((data: Snapshot) => setSnapshotResult({ key: snapshotKey, data }))
       .catch((e: unknown) => {
         if (!(e instanceof DOMException && e.name === "AbortError")) {
-          setSnapshotResult({ key: snapshotKey, error: "Không lấy được tỷ giá. Vui lòng thử lại." });
+          // Stored message doubles as the error flag; render translates via t(M.rateError).
+          setSnapshotResult({ key: snapshotKey, error: M.rateError.vi });
         }
       });
     return () => controller.abort();
@@ -155,7 +190,8 @@ export default function CurrencyTool() {
       .then((data: { points: HistoryPoint[] }) => setHistoryResult({ key: historyKey, points: data.points }))
       .catch((e: unknown) => {
         if (!(e instanceof DOMException && e.name === "AbortError")) {
-          setHistoryResult({ key: historyKey, error: "Không tải được dữ liệu biểu đồ." });
+          // Stored message doubles as the error flag; render translates via t(M.chartError).
+          setHistoryResult({ key: historyKey, error: M.chartError.vi });
         }
       });
     return () => controller.abort();
@@ -185,24 +221,24 @@ export default function CurrencyTool() {
     setTo(from);
   }, [from, to]);
 
-  const convertedText = converted !== null ? formatRate(converted.toNumber()) : "";
+  const convertedText = converted !== null ? formatRate(converted.toNumber(), locale) : "";
 
   return (
     <div className="space-y-4">
       {/* ---- Converter ---- */}
       <Card>
         <CardHeader
-          title="Chuyển đổi tiền tệ"
-          subtitle={snapshot ? `Cập nhật: ${snapshot.date} · nguồn mở fawazahmed0/exchange-api` : "Đang tải tỷ giá…"}
+          title={t(M.title)}
+          subtitle={snapshot ? t(M.updated).replace("{date}", snapshot.date) : t(M.loadingRates)}
           actions={
-            <Button variant="ghost" size="icon" aria-label="Tải lại tỷ giá" onClick={() => setReloadKey((k) => k + 1)}>
+            <Button variant="ghost" size="icon" aria-label={t(M.reloadRates)} onClick={() => setReloadKey((k) => k + 1)}>
               <RefreshCw className="h-4 w-4" />
             </Button>
           }
         />
         <CardBody>
           <div className="grid items-end gap-3 sm:grid-cols-[1fr_1fr_auto_1fr]">
-            <Field label="Số tiền" htmlFor="cur-amount">
+            <Field label={t(M.amount)} htmlFor="cur-amount">
               <TextInput
                 id="cur-amount"
                 inputMode="decimal"
@@ -211,7 +247,7 @@ export default function CurrencyTool() {
                 className="font-mono"
               />
             </Field>
-            <Field label="Từ" htmlFor="cur-from">
+            <Field label={t(M.from)} htmlFor="cur-from">
               <Select id="cur-from" value={from} onChange={(e) => setFrom(e.target.value)}>
                 <CurrencyOptions currencies={currencies} />
               </Select>
@@ -220,12 +256,12 @@ export default function CurrencyTool() {
               variant="outline"
               size="icon"
               onClick={swap}
-              aria-label="Đảo chiều chuyển đổi"
+              aria-label={t(M.swap)}
               className="mb-0.5 justify-self-center"
             >
               <ArrowLeftRight className="h-4 w-4" />
             </Button>
-            <Field label="Sang" htmlFor="cur-to">
+            <Field label={t(M.to)} htmlFor="cur-to">
               <Select id="cur-to" value={to} onChange={(e) => setTo(e.target.value)}>
                 <CurrencyOptions currencies={currencies} />
               </Select>
@@ -234,27 +270,27 @@ export default function CurrencyTool() {
 
           <div className="mt-5 rounded-xl border border-border bg-muted/50 p-4">
             {snapshotError ? (
-              <p className="text-sm text-danger">{snapshotError}</p>
+              <p className="text-sm text-danger">{t(M.rateError)}</p>
             ) : amount === null ? (
-              <p className="text-sm text-muted-foreground">Nhập số tiền hợp lệ để chuyển đổi.</p>
+              <p className="text-sm text-muted-foreground">{t(M.invalidAmount)}</p>
             ) : converted === null ? (
               <div className="h-12 w-2/3 animate-pulse rounded bg-muted" />
             ) : (
               <div className="flex flex-wrap items-end justify-between gap-3">
                 <div>
                   <p className="text-xs text-muted-foreground">
-                    {formatRate(amount.toNumber())} {from.toUpperCase()} =
+                    {formatRate(amount.toNumber(), locale)} {from.toUpperCase()} =
                   </p>
                   <p className="font-mono text-2xl font-bold sm:text-3xl">
                     {convertedText}{" "}
                     <span className="text-base font-semibold text-muted-foreground">{to.toUpperCase()}</span>
                   </p>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    1 {from.toUpperCase()} = {formatRate(rate!)} {to.toUpperCase()} · 1 {to.toUpperCase()} ={" "}
-                    {formatRate(1 / rate!)} {from.toUpperCase()}
+                    1 {from.toUpperCase()} = {formatRate(rate!, locale)} {to.toUpperCase()} · 1 {to.toUpperCase()} ={" "}
+                    {formatRate(1 / rate!, locale)} {from.toUpperCase()}
                   </p>
                 </div>
-                <CopyButton text={convertedText} label="Sao chép kết quả" />
+                <CopyButton text={convertedText} label={t(M.copyResult)} />
               </div>
             )}
           </div>
@@ -264,16 +300,17 @@ export default function CurrencyTool() {
       {/* ---- Chart ---- */}
       <Card>
         <CardHeader
-          title={`Biểu đồ ${from.toUpperCase()}/${to.toUpperCase()}`}
+          title={t(M.chartTitle).replace("{pair}", `${from.toUpperCase()}/${to.toUpperCase()}`)}
           subtitle={
             changePct !== null ? (
               <span className={cn("inline-flex items-center gap-1", changePct >= 0 ? "text-success" : "text-danger")}>
                 {changePct >= 0 ? <TrendingUp className="h-3.5 w-3.5" /> : <TrendingDown className="h-3.5 w-3.5" />}
                 {changePct >= 0 ? "+" : ""}
-                {changePct.toFixed(2)}% trong khoảng đã chọn
+                {changePct.toFixed(2)}
+                {t(M.pctInRange)}
               </span>
             ) : (
-              "Tỷ giá đóng cửa theo ngày"
+              t(M.dailyClose)
             )
           }
           actions={<Tabs size="sm" items={RANGE_ITEMS} value={range} onChange={setRange} />}
@@ -281,16 +318,16 @@ export default function CurrencyTool() {
         <CardBody>
           {historyError ? (
             <div className="flex h-64 flex-col items-center justify-center gap-3 text-sm text-muted-foreground">
-              {historyError}
+              {t(M.chartError)}
               <Button variant="outline" size="sm" onClick={() => setReloadKey((k) => k + 1)}>
-                Thử lại
+                {t(M.retry)}
               </Button>
             </div>
           ) : historyLoading && history.length === 0 ? (
             <div className="h-64 animate-pulse rounded-lg bg-muted" />
           ) : history.length === 0 ? (
             <div className="flex h-64 items-center justify-center text-sm text-muted-foreground">
-              Chưa có dữ liệu lịch sử cho cặp tiền này.
+              {t(M.noHistory)}
             </div>
           ) : (
             <div className={cn("h-64 sm:h-72", historyLoading && "opacity-60 transition-opacity")}>
@@ -317,7 +354,7 @@ export default function CurrencyTool() {
                     axisLine={false}
                     width={56}
                     domain={["auto", "auto"]}
-                    tickFormatter={(v: number) => formatCompact(v)}
+                    tickFormatter={(v: number) => formatCompact(v, locale)}
                   />
                   <Tooltip
                     content={<ChartTooltip quote={to} />}
@@ -337,9 +374,7 @@ export default function CurrencyTool() {
               </ResponsiveContainer>
             </div>
           )}
-          <p className="mt-3 text-xs text-muted-foreground">
-            Dữ liệu tổng hợp từ nguồn mở, cập nhật theo ngày — chỉ mang tính tham khảo, không phải tư vấn đầu tư.
-          </p>
+          <p className="mt-3 text-xs text-muted-foreground">{t(M.disclaimer)}</p>
         </CardBody>
       </Card>
     </div>

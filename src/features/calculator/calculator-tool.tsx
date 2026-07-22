@@ -8,16 +8,54 @@ import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { CopyButton } from "@/components/ui/copy-button";
 import { Tabs } from "@/components/ui/tabs";
+import type { Localized } from "@/lib/i18n";
+import { useI18n } from "@/lib/i18n/use-lang";
 import { cn } from "@/lib/utils";
 
 import { formatRaw, useCalculator, type MemoryOp } from "./use-calculator";
 
 type CalcMode = "basic" | "scientific";
 
-const MODE_TABS = [
-  { value: "basic" as const, label: "Cơ bản" },
-  { value: "scientific" as const, label: "Khoa học" },
-];
+const M = {
+  tabBasic: { vi: "Cơ bản", en: "Basic" },
+  tabScientific: { vi: "Khoa học", en: "Scientific" },
+  title: { vi: "Máy tính", en: "Calculator" },
+  subtitle: {
+    vi: "Cơ bản & Khoa học — độ chính xác thập phân tuyệt đối",
+    en: "Basic & Scientific — exact decimal precision",
+  },
+  angleToggleTitle: {
+    vi: "Chuyển đổi độ / radian (áp dụng cho hàm lượng giác)",
+    en: "Toggle degrees / radians (applies to trigonometric functions)",
+  },
+  angleToggleAria: { vi: "Chuyển đổi độ / radian", en: "Toggle degrees / radians" },
+  memClear: { vi: "Xóa bộ nhớ", en: "Clear memory" },
+  memRecall: { vi: "Gọi lại bộ nhớ", en: "Recall memory" },
+  memSubtract: { vi: "Trừ khỏi bộ nhớ", en: "Subtract from memory" },
+  memAdd: { vi: "Cộng vào bộ nhớ", en: "Add to memory" },
+  memStore: { vi: "Lưu vào bộ nhớ", en: "Store in memory" },
+  expAria: { vi: "Nhân 10 mũ n", en: "Multiply by 10 to the power of n" },
+  ansAria: { vi: "Kết quả gần nhất", en: "Most recent result" },
+  acAria: { vi: "Xóa tất cả", en: "Clear all" },
+  backspaceAria: { vi: "Xóa lùi", en: "Backspace" },
+  minusAria: { vi: "Trừ", en: "Subtract" },
+  plusMinusAria: { vi: "Đổi dấu", en: "Toggle sign" },
+  dotAria: { vi: "Dấu thập phân", en: "Decimal point" },
+  equalsAria: { vi: "Tính kết quả", en: "Calculate result" },
+  keyboardHint: {
+    vi: "Hỗ trợ bàn phím: 0–9 · + − × ÷ ^ % ! ( ) · Enter = · Backspace ⌫ · Esc AC",
+    en: "Keyboard support: 0–9 · + − × ÷ ^ % ! ( ) · Enter = · Backspace ⌫ · Esc AC",
+  },
+  historyTitle: { vi: "Lịch sử", en: "History" },
+  historySubtitle: { vi: "Nhấn vào một kết quả để dùng lại", en: "Click a result to reuse it" },
+  clearHistoryTitle: { vi: "Xóa toàn bộ lịch sử", en: "Clear the entire history" },
+  clearHistory: { vi: "Xóa lịch sử", en: "Clear history" },
+  memoryPanelLabel: { vi: "Bộ nhớ (M)", en: "Memory (M)" },
+  emptyHistory: { vi: "Chưa có phép tính nào.", en: "No calculations yet." },
+  emptyPressBefore: { vi: "Nhấn", en: "Press" },
+  emptyPressAfter: { vi: "để lưu kết quả vào đây.", en: "to save a result here." },
+  useResultTitle: { vi: "Dùng kết quả này làm số mới", en: "Use this result as a new number" },
+} satisfies Record<string, Localized>;
 
 type KeyVariant = "digit" | "op" | "action" | "danger" | "equals" | "fn";
 
@@ -76,18 +114,24 @@ function displaySizeClass(text: string): string {
 }
 
 export default function CalculatorTool() {
+  const { t } = useI18n();
   const [mode, setMode] = useState<CalcMode>("basic");
   const calc = useCalculator();
+
+  const modeTabs = [
+    { value: "basic" as const, label: t(M.tabBasic) },
+    { value: "scientific" as const, label: t(M.tabScientific) },
+  ];
 
   const memoryDisplay = calc.memory !== null ? formatRaw(calc.memory) : null;
   const memoryVisible = memoryDisplay !== null && memoryDisplay !== "0";
 
   const memoryButtons: Array<{ op: MemoryOp; label: string; title: string; disabled?: boolean }> = [
-    { op: "MC", label: "MC", title: "Xóa bộ nhớ", disabled: calc.memory === null },
-    { op: "MR", label: "MR", title: "Gọi lại bộ nhớ", disabled: calc.memory === null },
-    { op: "M-", label: "M−", title: "Trừ khỏi bộ nhớ" },
-    { op: "M+", label: "M+", title: "Cộng vào bộ nhớ" },
-    { op: "MS", label: "MS", title: "Lưu vào bộ nhớ" },
+    { op: "MC", label: "MC", title: t(M.memClear), disabled: calc.memory === null },
+    { op: "MR", label: "MR", title: t(M.memRecall), disabled: calc.memory === null },
+    { op: "M-", label: "M−", title: t(M.memSubtract) },
+    { op: "M+", label: "M+", title: t(M.memAdd) },
+    { op: "MS", label: "MS", title: t(M.memStore) },
   ];
 
   return (
@@ -95,9 +139,9 @@ export default function CalculatorTool() {
       {/* ── Main calculator ─────────────────────────────────────────── */}
       <Card className="lg:col-span-2">
         <CardHeader
-          title="Máy tính"
-          subtitle="Cơ bản & Khoa học — độ chính xác thập phân tuyệt đối"
-          actions={<Tabs items={MODE_TABS} value={mode} onChange={setMode} size="sm" />}
+          title={t(M.title)}
+          subtitle={t(M.subtitle)}
+          actions={<Tabs items={modeTabs} value={mode} onChange={setMode} size="sm" />}
         />
         <CardBody className="space-y-3">
           {/* Display */}
@@ -106,7 +150,7 @@ export default function CalculatorTool() {
               <button
                 type="button"
                 onClick={calc.toggleAngleMode}
-                title="Chuyển đổi độ / radian (áp dụng cho hàm lượng giác)"
+                title={t(M.angleToggleTitle)}
                 className="rounded bg-primary/10 px-1.5 py-0.5 font-semibold text-primary transition-colors hover:bg-primary/20"
               >
                 {calc.angleMode === "deg" ? "DEG" : "RAD"}
@@ -157,7 +201,7 @@ export default function CalculatorTool() {
             <div className="grid grid-cols-4 gap-2">
               <Key
                 label={calc.angleMode === "deg" ? "DEG" : "RAD"}
-                ariaLabel="Chuyển đổi độ / radian"
+                ariaLabel={t(M.angleToggleAria)}
                 variant="fn"
                 active
                 className="h-9 text-xs"
@@ -184,15 +228,15 @@ export default function CalculatorTool() {
 
               <Key label="xʸ" variant="fn" className="h-9 text-xs" onClick={() => calc.pressOperator("^")} />
               <Key label="1/x" variant="fn" className="h-9 text-xs" onClick={() => calc.pressPostfix("⁻¹")} />
-              <Key label="EXP" ariaLabel="Nhân 10 mũ n" variant="fn" className="h-9 text-xs" onClick={calc.pressExp10} />
-              <Key label="Ans" ariaLabel="Kết quả gần nhất" variant="fn" className="h-9 text-xs" onClick={() => calc.pressConstant("Ans")} />
+              <Key label="EXP" ariaLabel={t(M.expAria)} variant="fn" className="h-9 text-xs" onClick={calc.pressExp10} />
+              <Key label="Ans" ariaLabel={t(M.ansAria)} variant="fn" className="h-9 text-xs" onClick={() => calc.pressConstant("Ans")} />
             </div>
           ) : null}
 
           {/* Basic pad */}
           <div className="grid grid-cols-4 gap-2">
-            <Key label="AC" ariaLabel="Xóa tất cả" variant="danger" className="h-12 text-base" onClick={calc.allClear} />
-            <Key label="⌫" ariaLabel="Xóa lùi" variant="action" className="h-12 text-base" onClick={calc.backspace} />
+            <Key label="AC" ariaLabel={t(M.acAria)} variant="danger" className="h-12 text-base" onClick={calc.allClear} />
+            <Key label="⌫" ariaLabel={t(M.backspaceAria)} variant="action" className="h-12 text-base" onClick={calc.backspace} />
             <Key label="%" variant="op" className="h-12 text-base" onClick={() => calc.pressPostfix("%")} />
             <Key label="÷" variant="op" className="h-12 text-lg" onClick={() => calc.pressOperator("÷")} />
 
@@ -204,47 +248,45 @@ export default function CalculatorTool() {
             <Key label="4" className="h-12 text-base" onClick={() => calc.pressDigit("4")} />
             <Key label="5" className="h-12 text-base" onClick={() => calc.pressDigit("5")} />
             <Key label="6" className="h-12 text-base" onClick={() => calc.pressDigit("6")} />
-            <Key label="−" ariaLabel="Trừ" variant="op" className="h-12 text-lg" onClick={() => calc.pressOperator("-")} />
+            <Key label="−" ariaLabel={t(M.minusAria)} variant="op" className="h-12 text-lg" onClick={() => calc.pressOperator("-")} />
 
             <Key label="1" className="h-12 text-base" onClick={() => calc.pressDigit("1")} />
             <Key label="2" className="h-12 text-base" onClick={() => calc.pressDigit("2")} />
             <Key label="3" className="h-12 text-base" onClick={() => calc.pressDigit("3")} />
             <Key label="+" variant="op" className="h-12 text-lg" onClick={() => calc.pressOperator("+")} />
 
-            <Key label="±" ariaLabel="Đổi dấu" variant="action" className="h-12 text-base" onClick={calc.pressPlusMinus} />
+            <Key label="±" ariaLabel={t(M.plusMinusAria)} variant="action" className="h-12 text-base" onClick={calc.pressPlusMinus} />
             <Key label="0" className="h-12 text-base" onClick={() => calc.pressDigit("0")} />
-            <Key label="." ariaLabel="Dấu thập phân" className="h-12 text-base" onClick={calc.pressDot} />
-            <Key label="=" ariaLabel="Tính kết quả" variant="equals" className="h-12 text-lg" onClick={calc.equals} />
+            <Key label="." ariaLabel={t(M.dotAria)} className="h-12 text-base" onClick={calc.pressDot} />
+            <Key label="=" ariaLabel={t(M.equalsAria)} variant="equals" className="h-12 text-lg" onClick={calc.equals} />
           </div>
 
-          <p className="text-center text-[11px] text-muted-foreground">
-            Hỗ trợ bàn phím: 0–9 · + − × ÷ ^ % ! ( ) · Enter = · Backspace ⌫ · Esc AC
-          </p>
+          <p className="text-center text-[11px] text-muted-foreground">{t(M.keyboardHint)}</p>
         </CardBody>
       </Card>
 
       {/* ── History / memory ────────────────────────────────────────── */}
       <Card className="self-start">
         <CardHeader
-          title="Lịch sử"
-          subtitle="Nhấn vào một kết quả để dùng lại"
+          title={t(M.historyTitle)}
+          subtitle={t(M.historySubtitle)}
           actions={
             <Button
               variant="ghost"
               size="sm"
               onClick={calc.clearHistory}
               disabled={calc.history.length === 0}
-              title="Xóa toàn bộ lịch sử"
+              title={t(M.clearHistoryTitle)}
             >
               <Trash2 className="h-3.5 w-3.5" />
-              Xóa lịch sử
+              {t(M.clearHistory)}
             </Button>
           }
         />
         <CardBody>
           {memoryVisible ? (
             <div className="mb-3 flex items-center justify-between gap-2 rounded-lg border border-accent/30 bg-accent/10 px-3 py-2">
-              <span className="text-xs font-medium text-accent">Bộ nhớ (M)</span>
+              <span className="text-xs font-medium text-accent">{t(M.memoryPanelLabel)}</span>
               <span className="min-w-0 truncate font-mono text-sm text-foreground" title={memoryDisplay ?? undefined}>
                 {memoryDisplay}
               </span>
@@ -252,9 +294,9 @@ export default function CalculatorTool() {
           ) : null}
           {calc.history.length === 0 ? (
             <p className="py-8 text-center text-sm text-muted-foreground">
-              Chưa có phép tính nào.
+              {t(M.emptyHistory)}
               <br />
-              Nhấn <span className="font-mono">=</span> để lưu kết quả vào đây.
+              {t(M.emptyPressBefore)} <span className="font-mono">=</span> {t(M.emptyPressAfter)}
             </p>
           ) : (
             <ul className="-mx-2 max-h-[420px] space-y-0.5 overflow-y-auto px-2">
@@ -267,7 +309,7 @@ export default function CalculatorTool() {
                     type="button"
                     onClick={() => calc.loadValue(item.raw)}
                     className="min-w-0 flex-1 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-(--ring)"
-                    title="Dùng kết quả này làm số mới"
+                    title={t(M.useResultTitle)}
                   >
                     <span className="block truncate font-mono text-xs text-muted-foreground">{item.expression} =</span>
                     <span className="block truncate font-mono text-sm font-semibold text-foreground">{item.result}</span>

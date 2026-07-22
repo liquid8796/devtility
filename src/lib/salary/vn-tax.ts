@@ -1,3 +1,4 @@
+import type { Localized } from "@/lib/i18n";
 import { Decimal, dec } from "@/lib/math/decimal";
 
 /**
@@ -26,8 +27,8 @@ import { Decimal, dec } from "@/lib/math/decimal";
 export type Region = 1 | 2 | 3 | 4;
 
 export interface TaxConfig {
-  /** Human label, e.g. "2026". */
-  label: string;
+  /** Human label (vi/en), e.g. "2026". */
+  label: Localized;
   /** Giảm trừ gia cảnh cho bản thân, ₫/tháng. */
   personalDeduction: Decimal;
   /** Giảm trừ cho mỗi người phụ thuộc, ₫/tháng. */
@@ -51,7 +52,7 @@ const REGIONAL_MIN_WAGE_2024: Record<Region, Decimal> = {
  * áp dụng từ kỳ tính thuế 2026: 15,5tr bản thân / 6,2tr mỗi người phụ thuộc.
  */
 export const PRESET_2026: TaxConfig = {
-  label: "2026",
+  label: { vi: "2026", en: "2026" },
   personalDeduction: dec(15_500_000),
   dependentDeduction: dec(6_200_000),
   baseSalary: dec(2_340_000),
@@ -60,7 +61,7 @@ export const PRESET_2026: TaxConfig = {
 
 /** Chế độ 2025 — giảm trừ gia cảnh 11tr / 4,4tr (Nghị quyết 954/2020/UBTVQH14). */
 export const PRESET_2025: TaxConfig = {
-  label: "2025",
+  label: { vi: "2025", en: "2025" },
   personalDeduction: dec(11_000_000),
   dependentDeduction: dec(4_400_000),
   baseSalary: dec(2_340_000),
@@ -85,25 +86,53 @@ export const EMPLOYER_INSURANCE_RATES = {
 interface PitBracketDef {
   rate: Decimal;
   cap: Decimal | null;
-  label: string;
+  label: Localized;
 }
 
 /** Biểu thuế TNCN lũy tiến từng phần theo tháng (thu nhập tính thuế). */
 export const PIT_BRACKETS: readonly PitBracketDef[] = [
-  { rate: dec("0.05"), cap: dec(5_000_000), label: "Bậc 1 (5% đến 5tr)" },
-  { rate: dec("0.1"), cap: dec(10_000_000), label: "Bậc 2 (10% trên 5tr đến 10tr)" },
-  { rate: dec("0.15"), cap: dec(18_000_000), label: "Bậc 3 (15% trên 10tr đến 18tr)" },
-  { rate: dec("0.2"), cap: dec(32_000_000), label: "Bậc 4 (20% trên 18tr đến 32tr)" },
-  { rate: dec("0.25"), cap: dec(52_000_000), label: "Bậc 5 (25% trên 32tr đến 52tr)" },
-  { rate: dec("0.3"), cap: dec(80_000_000), label: "Bậc 6 (30% trên 52tr đến 80tr)" },
-  { rate: dec("0.35"), cap: null, label: "Bậc 7 (35% trên 80tr)" },
+  {
+    rate: dec("0.05"),
+    cap: dec(5_000_000),
+    label: { vi: "Bậc 1 (5% đến 5tr)", en: "Bracket 1 (5% up to 5M)" },
+  },
+  {
+    rate: dec("0.1"),
+    cap: dec(10_000_000),
+    label: { vi: "Bậc 2 (10% trên 5tr đến 10tr)", en: "Bracket 2 (10% over 5M to 10M)" },
+  },
+  {
+    rate: dec("0.15"),
+    cap: dec(18_000_000),
+    label: { vi: "Bậc 3 (15% trên 10tr đến 18tr)", en: "Bracket 3 (15% over 10M to 18M)" },
+  },
+  {
+    rate: dec("0.2"),
+    cap: dec(32_000_000),
+    label: { vi: "Bậc 4 (20% trên 18tr đến 32tr)", en: "Bracket 4 (20% over 18M to 32M)" },
+  },
+  {
+    rate: dec("0.25"),
+    cap: dec(52_000_000),
+    label: { vi: "Bậc 5 (25% trên 32tr đến 52tr)", en: "Bracket 5 (25% over 32M to 52M)" },
+  },
+  {
+    rate: dec("0.3"),
+    cap: dec(80_000_000),
+    label: { vi: "Bậc 6 (30% trên 52tr đến 80tr)", en: "Bracket 6 (30% over 52M to 80M)" },
+  },
+  {
+    rate: dec("0.35"),
+    cap: null,
+    label: { vi: "Bậc 7 (35% trên 80tr)", en: "Bracket 7 (35% over 80M)" },
+  },
 ];
 
 export interface TaxBracketLine {
   /** Marginal rate of this bracket (e.g. 0.05). */
   rate: Decimal;
-  /** Human range label, e.g. "Bậc 1 (5% đến 5tr)". */
-  range: string;
+  /** Human range label (vi/en), e.g. "Bậc 1 (5% đến 5tr)" / "Bracket 1 (5% up to 5M)". */
+  range: Localized;
   /** Portion of taxable income that falls inside this bracket. */
   taxedIncome: Decimal;
   /** Tax due for this bracket (= taxedIncome × rate). */

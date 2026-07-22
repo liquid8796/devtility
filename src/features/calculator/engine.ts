@@ -1,3 +1,4 @@
+import type { Localized } from "@/lib/i18n";
 import { Decimal, dec } from "@/lib/math/decimal";
 
 /**
@@ -14,16 +15,23 @@ import { Decimal, dec } from "@/lib/math/decimal";
 
 export type AngleMode = "deg" | "rad";
 
-export type EvalResult = { ok: true; value: Decimal } | { ok: false; error: string };
+export type EvalResult = { ok: true; value: Decimal } | { ok: false; error: Localized };
 
 export const CALC_ERRORS = {
-  divideByZero: "Không thể chia cho 0",
-  invalid: "Biểu thức không hợp lệ",
-  domain: "Ngoài miền xác định",
-  overflow: "Giá trị quá lớn",
-} as const;
+  divideByZero: { vi: "Không thể chia cho 0", en: "Cannot divide by 0" },
+  invalid: { vi: "Biểu thức không hợp lệ", en: "Invalid expression" },
+  domain: { vi: "Ngoài miền xác định", en: "Out of domain" },
+  overflow: { vi: "Giá trị quá lớn", en: "Value too large" },
+} as const satisfies Record<string, Localized>;
 
-class CalcError extends Error {}
+class CalcError extends Error {
+  readonly localized: Localized;
+
+  constructor(localized: Localized) {
+    super(localized.vi);
+    this.localized = localized;
+  }
+}
 
 /** π and e at the configured 40-digit precision. */
 export const PI = Decimal.acos(-1);
@@ -446,6 +454,6 @@ export function evaluateExpression(expr: string, mode: AngleMode = "deg", ans?: 
     const value = evalRPN(toRPN(tokens), mode, ans ?? dec(0));
     return { ok: true, value };
   } catch (err) {
-    return { ok: false, error: err instanceof CalcError ? err.message : CALC_ERRORS.invalid };
+    return { ok: false, error: err instanceof CalcError ? err.localized : CALC_ERRORS.invalid };
   }
 }

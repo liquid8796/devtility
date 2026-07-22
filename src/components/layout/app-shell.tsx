@@ -5,13 +5,26 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 
+import { LanguageToggle } from "@/components/i18n/language-toggle";
 import { SidebarNav } from "@/components/layout/sidebar-nav";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
+import { useI18n } from "@/lib/i18n/use-lang";
 import { SITE } from "@/lib/registry/tools";
 
+const M = {
+  home: { vi: "Trang chủ", en: "Home" },
+  openMenu: { vi: "Mở menu", en: "Open menu" },
+  closeMenu: { vi: "Đóng menu", en: "Close menu" },
+  license: {
+    vi: "Chỉ dùng phi thương mại (PolyForm NC 1.0.0)",
+    en: "Non-commercial use only (PolyForm NC 1.0.0)",
+  },
+};
+
 function Logo() {
+  const { t } = useI18n();
   return (
-    <Link href="/" className="flex items-center gap-2.5" aria-label={`${SITE.name} — Trang chủ`}>
+    <Link href="/" className="flex items-center gap-2.5" aria-label={`${SITE.name} — ${t(M.home)}`}>
       <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-(--primary) to-(--accent) text-white shadow-sm">
         <TerminalSquare className="h-4.5 w-4.5" />
       </span>
@@ -25,6 +38,7 @@ function Logo() {
 export function AppShell({ children }: { children: ReactNode }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const pathname = usePathname();
+  const { t } = useI18n();
 
   // Close the mobile drawer on navigation (adjust-state-during-render pattern)
   const [prevPathname, setPrevPathname] = useState(pathname);
@@ -49,7 +63,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <button
             type="button"
             className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground lg:hidden"
-            aria-label={drawerOpen ? "Đóng menu" : "Mở menu"}
+            aria-label={drawerOpen ? t(M.closeMenu) : t(M.openMenu)}
             aria-expanded={drawerOpen}
             onClick={() => setDrawerOpen((v) => !v)}
           >
@@ -62,6 +76,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <span className="hidden font-mono text-[11px] text-muted-foreground md:inline">
               ~/tools <span className="cursor-blink" />
             </span>
+            <LanguageToggle />
             <ThemeToggle />
           </div>
         </div>
@@ -95,7 +110,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <footer className="border-t border-border/60">
         <div className="mx-auto flex max-w-[1440px] flex-col items-center justify-between gap-2 px-4 py-5 text-xs text-muted-foreground sm:flex-row sm:px-6">
           <p>
-            © {new Date().getFullYear()} {SITE.author} — Non-commercial use only (PolyForm NC 1.0.0)
+            © {new Date().getFullYear()} {SITE.author} — {t(M.license)}
           </p>
           <p className="font-mono">
             build with <span className="text-danger">♥</span> · Next.js · Vercel

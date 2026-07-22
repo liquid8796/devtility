@@ -7,6 +7,8 @@ import { PiggyBank } from "lucide-react";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { CopyButton } from "@/components/ui/copy-button";
 import { Field, Select, TextInput } from "@/components/ui/field";
+import type { Localized } from "@/lib/i18n";
+import { useI18n } from "@/lib/i18n/use-lang";
 import { Decimal, dec, formatDecimalVN, parseDecimal } from "@/lib/math/decimal";
 import { cn } from "@/lib/utils";
 
@@ -153,20 +155,77 @@ function IntInput({
   );
 }
 
-const FREQ_LABELS: Record<string, string> = {
-  "12": "hàng tháng",
-  "4": "hàng quý",
-  "2": "6 tháng một lần",
-  "1": "hàng năm",
+const FREQ_LABELS: Record<string, Localized> = {
+  "12": { vi: "hàng tháng", en: "monthly" },
+  "4": { vi: "hàng quý", en: "quarterly" },
+  "2": { vi: "6 tháng một lần", en: "every 6 months" },
+  "1": { vi: "hàng năm", en: "yearly" },
 };
 
-function money(d: Decimal): string {
-  return `${formatDecimalVN(d, 0)} ₫`;
+const M = {
+  inputsTitle: { vi: "Thông tin gửi tiền", en: "Deposit details" },
+  inputsSubtitle: { vi: "Tính lãi kép cho khoản tiết kiệm của bạn", en: "Calculate compound interest on your savings" },
+  principalLabel: { vi: "Số tiền gửi ban đầu", en: "Initial deposit" },
+  monthlyLabel: { vi: "Gửi thêm hàng tháng", en: "Monthly contribution" },
+  monthlyHint: {
+    vi: "Không bắt buộc — khoản gửi thêm được cộng vào cuối mỗi tháng",
+    en: "Optional — contributions are added at the end of each month",
+  },
+  rateLabel: { vi: "Lãi suất", en: "Interest rate" },
+  rateError: {
+    vi: "Lãi suất không hợp lệ — nhập số không âm, ví dụ 6,5",
+    en: "Invalid interest rate — enter a non-negative number, e.g. 6.5",
+  },
+  ratePlaceholder: { vi: "6,5", en: "6.5" },
+  rateSuffix: { vi: "%/năm", en: "%/year" },
+  termLabel: { vi: "Thời gian gửi", en: "Deposit term" },
+  yearsSuffix: { vi: "năm", en: "years" },
+  monthsSuffix: { vi: "tháng", en: "months" },
+  yearsAria: { vi: "Số năm gửi", en: "Number of years" },
+  monthsAria: { vi: "Số tháng gửi thêm", en: "Number of additional months" },
+  freqLabel: { vi: "Tần suất ghép lãi", en: "Compounding frequency" },
+  freqMonthly: { vi: "Hàng tháng", en: "Monthly" },
+  freqQuarterly: { vi: "Hàng quý", en: "Quarterly" },
+  freqSemiannual: { vi: "6 tháng", en: "Every 6 months" },
+  freqYearly: { vi: "Hàng năm", en: "Yearly" },
+  resultsTitle: { vi: "Kết quả", en: "Results" },
+  resultsPlaceholder: { vi: "Kết quả sẽ hiển thị tại đây", en: "Results will appear here" },
+  copyFinalBalance: { vi: "Sao chép tổng tiền cuối kỳ", en: "Copy the final balance" },
+  finalBalance: { vi: "Tổng tiền cuối kỳ", en: "Final balance" },
+  totalContrib: { vi: "Tổng gốc đã gửi", en: "Total principal deposited" },
+  totalInterest: { vi: "Tổng lãi nhận được", en: "Total interest earned" },
+  vsPrincipal: { vi: "so với vốn gốc", en: "compared to principal" },
+  legendPrincipal: { vi: "Gốc", en: "Principal" },
+  legendInterest: { vi: "Lãi", en: "Interest" },
+  creditNote: {
+    vi: "Lãi được ghi nhận vào cuối mỗi kỳ ghép lãi; các tháng chưa tròn kỳ chưa được tính lãi. Kết quả chỉ mang tính tham khảo.",
+    en: "Interest is credited at the end of each compounding period; months that have not completed a full period earn no interest yet. Results are for reference only.",
+  },
+  emptyInvalidRate: {
+    vi: "Vui lòng kiểm tra lại lãi suất để xem kết quả.",
+    en: "Please check the interest rate to see the results.",
+  },
+  emptyPrompt: {
+    vi: "Nhập số tiền gửi (hoặc khoản gửi thêm hàng tháng) và thời gian gửi để xem kết quả lãi kép.",
+    en: "Enter an initial deposit (or a monthly contribution) and a deposit term to see the compound interest results.",
+  },
+  tableTitle: { vi: "Bảng chi tiết theo năm", en: "Year-by-year breakdown" },
+  tableSubtitle: { vi: "Đơn vị: đồng (₫)", en: "Unit: Vietnamese dong (₫)" },
+  colYear: { vi: "Năm", en: "Year" },
+  colContribCum: { vi: "Gốc lũy kế", en: "Cumulative principal" },
+  colInterestYear: { vi: "Lãi trong năm", en: "Interest for the year" },
+  colInterestCum: { vi: "Lãi lũy kế", en: "Cumulative interest" },
+  colBalance: { vi: "Số dư cuối năm", en: "Year-end balance" },
+} satisfies Record<string, Localized>;
+
+function money(d: Decimal, locale: string): string {
+  return `${formatDecimalVN(d, 0, locale)} ₫`;
 }
 
 /* ── Component ──────────────────────────────────────────────────────── */
 
 export default function CompoundInterestTool() {
+  const { t, locale } = useI18n();
   const uid = useId();
   const ids = {
     principal: `${uid}-principal`,
@@ -207,7 +266,10 @@ export default function CompoundInterestTool() {
 
   const { rateInvalid, result, growthPct, yearsN, monthsN } = computed;
 
-  const durationLabel = [yearsN > 0 ? `${yearsN} năm` : null, monthsN > 0 ? `${monthsN} tháng` : null]
+  const durationLabel = [
+    yearsN > 0 ? t({ vi: `${yearsN} năm`, en: yearsN === 1 ? "1 year" : `${yearsN} years` }) : null,
+    monthsN > 0 ? t({ vi: `${monthsN} tháng`, en: monthsN === 1 ? "1 month" : `${monthsN} months` }) : null,
+  ]
     .filter(Boolean)
     .join(" ");
 
@@ -222,26 +284,26 @@ export default function CompoundInterestTool() {
       <div className="grid gap-4 lg:grid-cols-5">
         {/* ── Inputs ─────────────────────────────────────────────── */}
         <Card className="lg:col-span-2">
-          <CardHeader title="Thông tin gửi tiền" subtitle="Tính lãi kép cho khoản tiết kiệm của bạn" />
+          <CardHeader title={t(M.inputsTitle)} subtitle={t(M.inputsSubtitle)} />
           <CardBody className="space-y-4">
-            <Field label="Số tiền gửi ban đầu" htmlFor={ids.principal}>
+            <Field label={t(M.principalLabel)} htmlFor={ids.principal}>
               <MoneyInput id={ids.principal} value={principal} onChange={setPrincipal} placeholder="100.000.000" />
             </Field>
 
             <Field
-              label="Gửi thêm hàng tháng"
+              label={t(M.monthlyLabel)}
               htmlFor={ids.monthly}
-              hint="Không bắt buộc — khoản gửi thêm được cộng vào cuối mỗi tháng"
+              hint={t(M.monthlyHint)}
             >
               <MoneyInput id={ids.monthly} value={monthly} onChange={setMonthly} placeholder="0" />
             </Field>
 
             <Field
-              label="Lãi suất"
+              label={t(M.rateLabel)}
               htmlFor={ids.rate}
               hint={
                 rateInvalid && rate.trim() ? (
-                  <span className="text-danger">Lãi suất không hợp lệ — nhập số không âm, ví dụ 6,5</span>
+                  <span className="text-danger">{t(M.rateError)}</span>
                 ) : undefined
               }
             >
@@ -252,28 +314,28 @@ export default function CompoundInterestTool() {
                   autoComplete="off"
                   className="pr-16 text-right font-mono"
                   value={rate}
-                  placeholder="6,5"
+                  placeholder={t(M.ratePlaceholder)}
                   onChange={(e) => setRate(e.target.value.replace(/[^0-9.,]/g, "").slice(0, 10))}
                 />
                 <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                  %/năm
+                  {t(M.rateSuffix)}
                 </span>
               </div>
             </Field>
 
-            <Field label="Thời gian gửi">
+            <Field label={t(M.termLabel)}>
               <div className="grid grid-cols-2 gap-2">
-                <IntInput id={ids.years} value={years} onChange={setYears} suffix="năm" max={100} ariaLabel="Số năm gửi" />
-                <IntInput id={ids.months} value={months} onChange={setMonths} suffix="tháng" max={11} ariaLabel="Số tháng gửi thêm" />
+                <IntInput id={ids.years} value={years} onChange={setYears} suffix={t(M.yearsSuffix)} max={100} ariaLabel={t(M.yearsAria)} />
+                <IntInput id={ids.months} value={months} onChange={setMonths} suffix={t(M.monthsSuffix)} max={11} ariaLabel={t(M.monthsAria)} />
               </div>
             </Field>
 
-            <Field label="Tần suất ghép lãi" htmlFor={ids.freq}>
+            <Field label={t(M.freqLabel)} htmlFor={ids.freq}>
               <Select id={ids.freq} value={freq} onChange={(e) => setFreq(e.target.value)}>
-                <option value="12">Hàng tháng</option>
-                <option value="4">Hàng quý</option>
-                <option value="2">6 tháng</option>
-                <option value="1">Hàng năm</option>
+                <option value="12">{t(M.freqMonthly)}</option>
+                <option value="4">{t(M.freqQuarterly)}</option>
+                <option value="2">{t(M.freqSemiannual)}</option>
+                <option value="1">{t(M.freqYearly)}</option>
               </Select>
             </Field>
           </CardBody>
@@ -282,35 +344,38 @@ export default function CompoundInterestTool() {
         {/* ── Results ────────────────────────────────────────────── */}
         <Card className="lg:col-span-3">
           <CardHeader
-            title="Kết quả"
+            title={t(M.resultsTitle)}
             subtitle={
               result
-                ? `Gửi ${durationLabel || "—"} · ghép lãi ${FREQ_LABELS[freq] ?? ""}`
-                : "Kết quả sẽ hiển thị tại đây"
+                ? t({
+                    vi: `Gửi ${durationLabel || "—"} · ghép lãi ${FREQ_LABELS[freq]?.vi ?? ""}`,
+                    en: `Deposit for ${durationLabel || "—"} · compounded ${FREQ_LABELS[freq]?.en ?? ""}`,
+                  })
+                : t(M.resultsPlaceholder)
             }
-            actions={result ? <CopyButton text={money(result.balance)} label="Sao chép tổng tiền cuối kỳ" /> : undefined}
+            actions={result ? <CopyButton text={money(result.balance, locale)} label={t(M.copyFinalBalance)} /> : undefined}
           />
           <CardBody>
             {result ? (
               <div className="space-y-4">
                 <div className="grid gap-3 sm:grid-cols-3">
                   <div className="rounded-xl border border-accent/30 bg-accent/10 p-4 sm:col-span-3 lg:col-span-1">
-                    <p className="text-xs uppercase tracking-wider text-muted-foreground">Tổng tiền cuối kỳ</p>
-                    <p className="mt-1 break-all font-mono text-2xl font-bold text-accent">{money(result.balance)}</p>
+                    <p className="text-xs uppercase tracking-wider text-muted-foreground">{t(M.finalBalance)}</p>
+                    <p className="mt-1 break-all font-mono text-2xl font-bold text-accent">{money(result.balance, locale)}</p>
                   </div>
                   <div className="rounded-xl border border-border bg-muted/40 p-4">
-                    <p className="text-xs uppercase tracking-wider text-muted-foreground">Tổng gốc đã gửi</p>
+                    <p className="text-xs uppercase tracking-wider text-muted-foreground">{t(M.totalContrib)}</p>
                     <p className="mt-1 break-all font-mono text-lg font-semibold text-foreground">
-                      {money(result.totalContrib)}
+                      {money(result.totalContrib, locale)}
                     </p>
                   </div>
                   <div className="rounded-xl border border-border bg-muted/40 p-4">
-                    <p className="text-xs uppercase tracking-wider text-muted-foreground">Tổng lãi nhận được</p>
+                    <p className="text-xs uppercase tracking-wider text-muted-foreground">{t(M.totalInterest)}</p>
                     <p className="mt-1 break-all font-mono text-lg font-semibold text-success">
-                      {money(result.totalInterest)}
+                      {money(result.totalInterest, locale)}
                     </p>
                     {growthPct ? (
-                      <p className="mt-0.5 text-xs text-success">+{formatDecimalVN(growthPct, 2)}% so với vốn gốc</p>
+                      <p className="mt-0.5 text-xs text-success">+{formatDecimalVN(growthPct, 2, locale)}% {t(M.vsPrincipal)}</p>
                     ) : null}
                   </div>
                 </div>
@@ -320,7 +385,10 @@ export default function CompoundInterestTool() {
                   <div
                     className="flex h-4 w-full overflow-hidden rounded-full bg-muted"
                     role="img"
-                    aria-label={`Tỷ lệ gốc ${barPrincipalPct.toFixed(1)}%, lãi ${barInterestPct.toFixed(1)}%`}
+                    aria-label={t({
+                      vi: `Tỷ lệ gốc ${barPrincipalPct.toFixed(1)}%, lãi ${barInterestPct.toFixed(1)}%`,
+                      en: `Principal ${barPrincipalPct.toFixed(1)}%, interest ${barInterestPct.toFixed(1)}%`,
+                    })}
                   >
                     <div className="h-full bg-primary transition-all" style={{ width: `${barPrincipalPct}%` }} />
                     <div className="h-full bg-success transition-all" style={{ width: `${barInterestPct}%` }} />
@@ -328,27 +396,22 @@ export default function CompoundInterestTool() {
                   <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
                     <span className="inline-flex items-center gap-1.5">
                       <span className="h-2.5 w-2.5 rounded-full bg-primary" />
-                      Gốc · {barPrincipalPct.toFixed(1)}%
+                      {t(M.legendPrincipal)} · {barPrincipalPct.toFixed(1)}%
                     </span>
                     <span className="inline-flex items-center gap-1.5">
                       <span className="h-2.5 w-2.5 rounded-full bg-success" />
-                      Lãi · {barInterestPct.toFixed(1)}%
+                      {t(M.legendInterest)} · {barInterestPct.toFixed(1)}%
                     </span>
                   </div>
                 </div>
 
-                <p className="text-xs text-muted-foreground">
-                  Lãi được ghi nhận vào cuối mỗi kỳ ghép lãi; các tháng chưa tròn kỳ chưa được tính lãi. Kết quả chỉ
-                  mang tính tham khảo.
-                </p>
+                <p className="text-xs text-muted-foreground">{t(M.creditNote)}</p>
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center gap-3 py-14 text-center">
                 <PiggyBank className="h-9 w-9 text-muted-foreground/50" aria-hidden />
                 <p className="max-w-sm text-sm text-muted-foreground">
-                  {rateInvalid && rate.trim()
-                    ? "Vui lòng kiểm tra lại lãi suất để xem kết quả."
-                    : "Nhập số tiền gửi (hoặc khoản gửi thêm hàng tháng) và thời gian gửi để xem kết quả lãi kép."}
+                  {rateInvalid && rate.trim() ? t(M.emptyInvalidRate) : t(M.emptyPrompt)}
                 </p>
               </div>
             )}
@@ -359,26 +422,26 @@ export default function CompoundInterestTool() {
       {/* ── Year-by-year table ─────────────────────────────────────── */}
       {result && result.rows.length > 0 ? (
         <Card>
-          <CardHeader title="Bảng chi tiết theo năm" subtitle="Đơn vị: đồng (₫)" />
+          <CardHeader title={t(M.tableTitle)} subtitle={t(M.tableSubtitle)} />
           <CardBody className="p-0">
             <div className="overflow-x-auto">
               <table className="w-full min-w-[600px] text-sm">
                 <thead>
                   <tr className="border-b border-border text-left text-xs uppercase tracking-wider text-muted-foreground">
                     <th scope="col" className="px-4 py-2.5 font-medium">
-                      Năm
+                      {t(M.colYear)}
                     </th>
                     <th scope="col" className="px-4 py-2.5 text-right font-medium">
-                      Gốc lũy kế
+                      {t(M.colContribCum)}
                     </th>
                     <th scope="col" className="px-4 py-2.5 text-right font-medium">
-                      Lãi trong năm
+                      {t(M.colInterestYear)}
                     </th>
                     <th scope="col" className="px-4 py-2.5 text-right font-medium">
-                      Lãi lũy kế
+                      {t(M.colInterestCum)}
                     </th>
                     <th scope="col" className="px-4 py-2.5 text-right font-medium">
-                      Số dư cuối năm
+                      {t(M.colBalance)}
                     </th>
                   </tr>
                 </thead>
@@ -392,22 +455,30 @@ export default function CompoundInterestTool() {
                       )}
                     >
                       <td className="whitespace-nowrap px-4 py-2 text-foreground">
-                        Năm {row.year}
+                        {t({ vi: `Năm ${row.year}`, en: `Year ${row.year}` })}
                         {row.monthsInYear < 12 ? (
-                          <span className="text-xs text-muted-foreground"> ({row.monthsInYear} tháng)</span>
+                          <span className="text-xs text-muted-foreground">
+                            {" "}
+                            (
+                            {t({
+                              vi: `${row.monthsInYear} tháng`,
+                              en: row.monthsInYear === 1 ? "1 month" : `${row.monthsInYear} months`,
+                            })}
+                            )
+                          </span>
                         ) : null}
                       </td>
                       <td className="px-4 py-2 text-right font-mono text-foreground">
-                        {formatDecimalVN(row.contribCum, 0)}
+                        {formatDecimalVN(row.contribCum, 0, locale)}
                       </td>
                       <td className="px-4 py-2 text-right font-mono text-success">
-                        {formatDecimalVN(row.interestYear, 0)}
+                        {formatDecimalVN(row.interestYear, 0, locale)}
                       </td>
                       <td className="px-4 py-2 text-right font-mono text-success">
-                        {formatDecimalVN(row.interestCum, 0)}
+                        {formatDecimalVN(row.interestCum, 0, locale)}
                       </td>
                       <td className="px-4 py-2 text-right font-mono font-semibold text-foreground">
-                        {formatDecimalVN(row.balance, 0)}
+                        {formatDecimalVN(row.balance, 0, locale)}
                       </td>
                     </tr>
                   ))}
@@ -415,8 +486,10 @@ export default function CompoundInterestTool() {
               </table>
             </div>
             <p className="border-t border-border px-4 py-3 text-xs text-muted-foreground">
-              Khoản gửi thêm được cộng vào cuối mỗi tháng; lãi ghi nhận {FREQ_LABELS[freq] ?? ""} theo tần suất ghép
-              lãi đã chọn.
+              {t({
+                vi: `Khoản gửi thêm được cộng vào cuối mỗi tháng; lãi ghi nhận ${FREQ_LABELS[freq]?.vi ?? ""} theo tần suất ghép lãi đã chọn.`,
+                en: `Contributions are added at the end of each month; interest is credited ${FREQ_LABELS[freq]?.en ?? ""} according to the selected compounding frequency.`,
+              })}
             </p>
           </CardBody>
         </Card>

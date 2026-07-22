@@ -1,5 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 
+import type { Localized } from "@/lib/i18n";
+
 /**
  * Central domain model for the tool registry.
  *
@@ -14,10 +16,10 @@ export type CategoryId = "converters" | "utilities" | "technology" | "insights";
 
 export interface Category {
   id: CategoryId;
-  /** Display name (Vietnamese-first) */
-  name: string;
+  /** Display name (vi/en) */
+  name: Localized;
   /** Short tagline shown on the home page */
-  tagline: string;
+  tagline: Localized;
   icon: LucideIcon;
   /** Sort order in navigation */
   order: number;
@@ -27,10 +29,10 @@ export interface ToolDefinition {
   /** URL slug, unique across the whole site */
   slug: string;
   category: CategoryId;
-  name: string;
+  name: Localized;
   /** Compact name for the sidebar */
-  shortName: string;
-  description: string;
+  shortName: Localized;
+  description: Localized;
   icon: LucideIcon;
   keywords: string[];
   status?: "stable" | "beta";

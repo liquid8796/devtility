@@ -21,8 +21,8 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   const tool = getTool(category, slug);
   if (!tool) return {};
   return {
-    title: tool.name,
-    description: tool.description,
+    title: tool.name.vi,
+    description: tool.description.vi,
     keywords: [...tool.keywords],
   };
 }
@@ -33,7 +33,7 @@ export default async function ToolRoute({ params }: { params: Promise<Params> })
   if (!tool) notFound();
 
   return (
-    <ToolPage tool={tool}>
+    <ToolPage category={tool.category} slug={tool.slug}>
       <ToolRenderer slug={tool.slug} />
     </ToolPage>
   );
