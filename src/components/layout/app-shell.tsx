@@ -7,6 +7,7 @@ import { useEffect, useState, type ReactNode } from "react";
 
 import { LanguageToggle } from "@/components/i18n/language-toggle";
 import { SidebarNav } from "@/components/layout/sidebar-nav";
+import { ToolSearch } from "@/components/layout/tool-search";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { useI18n } from "@/lib/i18n/use-lang";
 import { CATEGORIES, getToolsByCategory, SITE } from "@/lib/registry/tools";
@@ -118,6 +119,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <span className="hidden font-mono text-[11px] text-muted-foreground xl:inline">
               ~/tools <span className="cursor-blink" />
             </span>
+            <ToolSearch />
             <LanguageToggle />
             <ThemeToggle />
           </div>
