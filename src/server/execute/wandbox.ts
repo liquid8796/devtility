@@ -78,14 +78,24 @@ export class WandboxProvider implements ExecutionProvider {
   async execute(request: ExecutionRequest): Promise<ExecutionResult> {
     const code = request.language === "java" ? preprocessJava(request.code) : request.code;
 
+    const body: Record<string, string> = {
+      compiler: request.version,
+      code,
+      stdin: request.stdin ?? "",
+    };
+    // Wandbox runs the JVM under a C (ASCII) locale, so System.out/err mangle
+    // non-ASCII output into "?". Force UTF-8 for both javac and the runtime.
+    // (Python is unaffected — CPython already defaults to UTF-8 there.)
+    if (request.language === "java") {
+      body["compiler-option-raw"] = "-encoding\nUTF-8";
+      body["runtime-option-raw"] =
+        "-Dstdout.encoding=UTF-8\n-Dstderr.encoding=UTF-8\n-Dfile.encoding=UTF-8";
+    }
+
     const res = await fetch(`${BASE_URL}/compile.json`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        compiler: request.version,
-        code,
-        stdin: request.stdin ?? "",
-      }),
+      body: JSON.stringify(body),
       cache: "no-store",
     });
 
