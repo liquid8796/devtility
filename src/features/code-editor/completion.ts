@@ -146,7 +146,8 @@ const JAVA_STATIC_MEMBERS: Record<string, string[]> = {
   ],
   String: ["valueOf()", "format()", "join()", "copyValueOf()", "CASE_INSENSITIVE_ORDER"],
   Integer: [
-    "MAX_VALUE", "MIN_VALUE", "SIZE", "BYTES", "parseInt()", "parseUnsignedInt()", "valueOf()",
+    "MAX_VALUE", "MIN_VALUE", "SIZE", "BYTES", "parseInt()", "parseUnsignedInt()",
+    "toUnsignedString()", "valueOf()",
     "toString()", "toBinaryString()", "toOctalString()", "toHexString()", "compare()", "max()",
     "min()", "sum()", "signum()", "bitCount()", "reverse()", "highestOneBit()", "lowestOneBit()",
     "numberOfLeadingZeros()", "numberOfTrailingZeros()",
@@ -160,7 +161,10 @@ const JAVA_STATIC_MEMBERS: Record<string, string[]> = {
     "parseDouble()", "valueOf()", "toString()", "compare()", "max()", "min()", "sum()",
     "isNaN()", "isInfinite()", "isFinite()",
   ],
-  Float: ["MAX_VALUE", "MIN_VALUE", "parseFloat()", "valueOf()", "compare()", "isNaN()"],
+  Float: [
+    "MAX_VALUE", "MIN_VALUE", "NaN", "POSITIVE_INFINITY", "NEGATIVE_INFINITY",
+    "parseFloat()", "valueOf()", "compare()", "isNaN()",
+  ],
   Boolean: ["TRUE", "FALSE", "parseBoolean()", "valueOf()", "toString()", "logicalAnd()", "logicalOr()", "logicalXor()"],
   Character: [
     "MAX_VALUE", "MIN_VALUE", "isDigit()", "isLetter()", "isLetterOrDigit()", "isWhitespace()",
@@ -190,14 +194,15 @@ const JAVA_STATIC_MEMBERS: Record<string, string[]> = {
   Map: ["of()", "ofEntries()", "entry()", "copyOf()"],
   Stream: ["of()", "empty()", "iterate()", "generate()", "concat()", "ofNullable()"],
   IntStream: ["range()", "rangeClosed()", "of()", "iterate()", "generate()", "concat()", "empty()"],
-  LongStream: ["range()", "rangeClosed()", "of()", "iterate()", "generate()", "empty()"],
-  DoubleStream: ["of()", "iterate()", "generate()", "empty()"],
+  LongStream: ["range()", "rangeClosed()", "of()", "iterate()", "generate()", "concat()", "empty()"],
+  DoubleStream: ["of()", "iterate()", "generate()", "concat()", "empty()"],
   Collectors: [
     "toList()", "toUnmodifiableList()", "toSet()", "toUnmodifiableSet()", "toMap()",
     "toUnmodifiableMap()", "toCollection()", "joining()", "counting()", "groupingBy()",
     "partitioningBy()", "mapping()", "filtering()", "flatMapping()", "reducing()",
     "summingInt()", "summingLong()", "summingDouble()", "averagingInt()", "averagingLong()",
-    "averagingDouble()", "summarizingInt()", "summarizingDouble()", "minBy()", "maxBy()",
+    "averagingDouble()", "summarizingInt()", "summarizingLong()", "summarizingDouble()",
+    "minBy()", "maxBy()",
     "collectingAndThen()", "teeing()",
   ],
   Optional: ["of()", "ofNullable()", "empty()"],
@@ -210,7 +215,7 @@ const JAVA_STATIC_MEMBERS: Record<string, string[]> = {
   LocalTime: ["now()", "of()", "parse()", "MIDNIGHT", "NOON", "MIN", "MAX"],
   Instant: ["now()", "parse()", "ofEpochMilli()", "ofEpochSecond()", "EPOCH", "MIN", "MAX"],
   Duration: [
-    "ofDays()", "ofHours()", "ofMinutes()", "ofSeconds()", "ofMillis()", "ofNanos()",
+    "of()", "ofDays()", "ofHours()", "ofMinutes()", "ofSeconds()", "ofMillis()", "ofNanos()",
     "between()", "parse()", "ZERO",
   ],
   Period: ["of()", "ofDays()", "ofMonths()", "ofYears()", "ofWeeks()", "between()", "parse()", "ZERO"],
@@ -218,17 +223,19 @@ const JAVA_STATIC_MEMBERS: Record<string, string[]> = {
   ZoneId: ["of()", "systemDefault()", "getAvailableZoneIds()"],
   DateTimeFormatter: [
     "ofPattern()", "ISO_DATE", "ISO_DATE_TIME", "ISO_LOCAL_DATE", "ISO_LOCAL_DATE_TIME",
-    "ISO_LOCAL_TIME", "ISO_INSTANT", "BASIC_ISO_DATE", "RFC_1123_DATE_TIME",
+    "ISO_LOCAL_TIME", "ISO_INSTANT", "ISO_OFFSET_DATE_TIME", "ISO_ZONED_DATE_TIME",
+    "BASIC_ISO_DATE", "RFC_1123_DATE_TIME",
   ],
   ChronoUnit: [
-    "NANOS", "MILLIS", "SECONDS", "MINUTES", "HOURS", "HALF_DAYS", "DAYS", "WEEKS",
-    "MONTHS", "YEARS", "DECADES", "CENTURIES", "FOREVER",
+    "NANOS", "MICROS", "MILLIS", "SECONDS", "MINUTES", "HOURS", "HALF_DAYS", "DAYS",
+    "WEEKS", "MONTHS", "YEARS", "DECADES", "CENTURIES", "FOREVER",
   ],
   Files: [
     "exists()", "notExists()", "readAllLines()", "readAllBytes()", "readString()", "write()",
     "writeString()", "lines()", "list()", "walk()", "find()", "copy()", "move()", "delete()",
     "deleteIfExists()", "createFile()", "createDirectory()", "createDirectories()",
-    "createTempFile()", "newBufferedReader()", "newBufferedWriter()", "newInputStream()",
+    "createTempFile()", "createTempDirectory()", "walkFileTree()", "newBufferedReader()",
+    "newBufferedWriter()", "newInputStream()",
     "newOutputStream()", "size()", "isDirectory()", "isRegularFile()", "isReadable()",
     "isWritable()", "getLastModifiedTime()",
   ],
@@ -240,8 +247,8 @@ const JAVA_STATIC_MEMBERS: Record<string, string[]> = {
   BigDecimal: ["ZERO", "ONE", "TEN", "valueOf()"],
   BigInteger: ["ZERO", "ONE", "TWO", "TEN", "valueOf()", "probablePrime()"],
   Thread: [
-    "sleep()", "currentThread()", "ofVirtual()", "ofPlatform()", "startVirtualThread()",
-    "onSpinWait()", "MAX_PRIORITY", "MIN_PRIORITY", "NORM_PRIORITY",
+    "sleep()", "currentThread()", "interrupted()", "yield()", "ofVirtual()", "ofPlatform()",
+    "startVirtualThread()", "onSpinWait()", "MAX_PRIORITY", "MIN_PRIORITY", "NORM_PRIORITY",
   ],
   Executors: [
     "newFixedThreadPool()", "newCachedThreadPool()", "newSingleThreadExecutor()",
@@ -255,7 +262,7 @@ const JAVA_STATIC_MEMBERS: Record<string, string[]> = {
   Function: ["identity()"],
   Predicate: ["isEqual()", "not()"],
   UnaryOperator: ["identity()"],
-  RoundingMode: ["HALF_UP", "HALF_DOWN", "HALF_EVEN", "UP", "DOWN", "CEILING", "FLOOR"],
+  RoundingMode: ["HALF_UP", "HALF_DOWN", "HALF_EVEN", "UP", "DOWN", "CEILING", "FLOOR", "UNNECESSARY"],
 };
 
 /**
@@ -290,7 +297,8 @@ const JAVA_INSTANCE_GROUPS: Array<[owner: string, names: string[]]> = [
   ]],
   ["Stream", [
     "map()", "mapToInt()", "mapToLong()", "mapToDouble()", "mapToObj()", "filter()",
-    "flatMap()", "distinct()", "sorted()", "peek()", "limit()", "skip()", "takeWhile()",
+    "flatMap()", "flatMapToInt()", "flatMapToLong()", "flatMapToDouble()", "distinct()",
+    "sorted()", "peek()", "limit()", "skip()", "takeWhile()",
     "dropWhile()", "forEachOrdered()", "collect()", "reduce()", "toList()", "count()",
     "sum()", "average()", "min()", "max()", "anyMatch()", "allMatch()", "noneMatch()",
     "findFirst()", "findAny()", "boxed()", "asLongStream()", "asDoubleStream()",
@@ -306,8 +314,8 @@ const JAVA_INSTANCE_GROUPS: Array<[owner: string, names: string[]]> = [
   ]],
   ["Scanner", [
     "next()", "nextLine()", "nextInt()", "nextLong()", "nextDouble()", "nextBoolean()",
-    "nextBigDecimal()", "hasNext()", "hasNextLine()", "hasNextInt()", "hasNextDouble()",
-    "useDelimiter()", "close()",
+    "nextBigDecimal()", "nextFloat()", "hasNext()", "hasNextLine()", "hasNextInt()",
+    "hasNextLong()", "hasNextDouble()", "useDelimiter()", "close()",
   ]],
   ["Matcher", [
     "find()", "group()", "groupCount()", "start()", "end()", "lookingAt()", "reset()",
@@ -317,7 +325,8 @@ const JAVA_INSTANCE_GROUPS: Array<[owner: string, names: string[]]> = [
   ["BigDecimal", [
     "add()", "subtract()", "multiply()", "divide()", "divideAndRemainder()", "remainder()",
     "negate()", "abs()", "pow()", "setScale()", "scale()", "precision()", "signum()",
-    "stripTrailingZeros()", "toPlainString()", "movePointLeft()", "movePointRight()",
+    "stripTrailingZeros()", "toPlainString()", "toBigInteger()", "movePointLeft()",
+    "movePointRight()",
   ]],
   ["java.time", [
     "plusDays()", "plusWeeks()", "plusMonths()", "plusYears()", "plusHours()",
@@ -327,16 +336,19 @@ const JAVA_INSTANCE_GROUPS: Array<[owner: string, names: string[]]> = [
     "getHour()", "getMinute()", "getSecond()", "format()", "isBefore()", "isAfter()",
     "isEqual()", "isLeapYear()", "atStartOfDay()", "atTime()", "atZone()", "withYear()",
     "withMonth()", "withDayOfMonth()", "until()", "toEpochDay()", "toLocalDate()",
-    "toLocalTime()", "toEpochMilli()", "truncatedTo()", "lengthOfMonth()", "lengthOfYear()",
+    "toLocalTime()", "toLocalDateTime()", "toInstant()", "toEpochMilli()",
+    "withZoneSameInstant()", "truncatedTo()", "lengthOfMonth()", "lengthOfYear()",
   ]],
   ["Duration", [
     "toDays()", "toHours()", "toMinutes()", "toSeconds()", "toMillis()", "toNanos()",
-    "plus()", "minus()", "multipliedBy()", "dividedBy()", "isZero()", "isNegative()",
+    "getSeconds()", "plus()", "minus()", "multipliedBy()", "dividedBy()", "isZero()",
+    "isNegative()",
   ]],
   ["CompletableFuture", [
     "thenApply()", "thenApplyAsync()", "thenAccept()", "thenRun()", "thenCompose()",
     "thenCombine()", "exceptionally()", "handle()", "whenComplete()", "complete()",
     "completeExceptionally()", "cancel()", "isDone()", "isCancelled()", "join()",
+    "getNow()", "orTimeout()", "completeOnTimeout()",
   ]],
   ["Thread", [
     "start()", "interrupt()", "isAlive()", "isInterrupted()", "setDaemon()", "setName()",
@@ -345,11 +357,11 @@ const JAVA_INSTANCE_GROUPS: Array<[owner: string, names: string[]]> = [
   ["Random", ["nextGaussian()", "ints()", "doubles()", "longs()"]],
   ["Throwable", [
     "getMessage()", "getLocalizedMessage()", "getCause()", "getStackTrace()",
-    "printStackTrace()", "initCause()", "addSuppressed()",
+    "printStackTrace()", "initCause()", "addSuppressed()", "getSuppressed()",
   ]],
-  ["Comparator", ["thenComparing()", "thenComparingInt()", "thenComparingDouble()"]],
-  ["functional", ["apply()", "test()", "accept()", "andThen()", "compose()"]],
-  ["Iterator", ["hasNext()", "remove()"]],
+  ["Comparator", ["thenComparing()", "thenComparingInt()", "thenComparingLong()", "thenComparingDouble()"]],
+  ["functional", ["apply()", "test()", "accept()", "andThen()", "compose()", "and()", "or()", "negate()"]],
+  ["Iterator", ["hasNext()", "remove()", "forEachRemaining()"]],
   ["Enum", ["name()", "ordinal()", "compareTo()"]],
   ["Object", ["equals()", "getClass()", "wait()", "notify()", "notifyAll()"]],
   ["array", ["length", "clone()"]],
