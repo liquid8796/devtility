@@ -76,28 +76,340 @@ const JAVA_KEYWORDS = [
 ];
 
 const JAVA_TYPES = [
-  "String", "System", "Math", "Object", "Integer", "Long", "Double", "Boolean",
-  "Character", "Byte", "Short", "Float", "StringBuilder", "Scanner", "ArrayList",
-  "LinkedList", "List", "Map", "HashMap", "TreeMap", "Set", "HashSet", "TreeSet",
-  "Arrays", "Collections", "Optional", "Stream", "IntStream", "Collectors",
-  "Exception", "RuntimeException", "IllegalArgumentException", "Thread", "Runnable",
-  "BigDecimal", "BigInteger", "LocalDate", "LocalDateTime", "Duration", "Random",
-  "UUID", "Pattern", "Matcher", "Iterable", "Comparable", "Comparator",
+  // java.lang
+  "String", "CharSequence", "System", "Math", "Object", "Objects", "Integer", "Long",
+  "Double", "Boolean", "Character", "Byte", "Short", "Float", "Number", "StringBuilder",
+  "StringBuffer", "Iterable", "Comparable", "Runnable", "Thread", "Enum", "Class",
+  "Throwable", "Exception", "RuntimeException", "Error", "IllegalArgumentException",
+  "IllegalStateException", "NullPointerException", "IndexOutOfBoundsException",
+  "ArithmeticException", "NumberFormatException", "UnsupportedOperationException",
+  "ClassCastException", "InterruptedException", "StackOverflowError", "OutOfMemoryError",
+  // java.util
+  "Scanner", "ArrayList", "LinkedList", "ArrayDeque", "PriorityQueue", "Stack",
+  "List", "Map", "HashMap", "LinkedHashMap", "TreeMap", "Set", "HashSet",
+  "LinkedHashSet", "TreeSet", "Deque", "Queue", "Collection", "Iterator",
+  "ListIterator", "Arrays", "Collections", "Optional", "OptionalInt", "OptionalLong",
+  "OptionalDouble", "Comparator", "Random", "UUID", "StringJoiner", "BitSet",
+  "ConcurrentModificationException", "NoSuchElementException",
+  // java.util.stream & function
+  "Stream", "IntStream", "LongStream", "DoubleStream", "Collectors",
+  "Function", "BiFunction", "Supplier", "Consumer", "BiConsumer", "Predicate",
+  "BiPredicate", "UnaryOperator", "BinaryOperator",
+  // java.util.regex, math, text
+  "Pattern", "Matcher", "BigDecimal", "BigInteger", "MathContext", "RoundingMode",
+  // java.time
+  "LocalDate", "LocalDateTime", "LocalTime", "Instant", "Duration", "Period",
+  "ZonedDateTime", "ZoneId", "DateTimeFormatter", "ChronoUnit", "DayOfWeek", "Month",
+  // java.io / java.nio
+  "Files", "Path", "Paths", "StandardCharsets", "BufferedReader", "BufferedWriter",
+  "InputStreamReader", "OutputStreamWriter", "FileReader", "FileWriter",
+  "PrintStream", "PrintWriter", "InputStream", "OutputStream", "IOException",
+  "UncheckedIOException", "FileNotFoundException",
+  // java.util.concurrent
+  "Callable", "Executors", "ExecutorService", "CompletableFuture", "Future",
+  "TimeUnit", "ThreadLocalRandom", "CountDownLatch", "ConcurrentHashMap",
+  "AtomicInteger", "AtomicLong", "AtomicBoolean", "AtomicReference",
 ];
 
-const JAVA_MEMBERS = methodList([
-  "println()", "print()", "printf()", "out", "err", "in", "length()", "length",
-  "size()", "get()", "set()", "add()", "remove()", "put()", "contains()",
-  "containsKey()", "containsValue()", "isEmpty()", "equals()", "hashCode()",
-  "toString()", "charAt()", "substring()", "indexOf()", "split()", "trim()",
-  "strip()", "toLowerCase()", "toUpperCase()", "replace()", "valueOf()",
-  "parseInt()", "parseDouble()", "format()", "join()", "stream()", "forEach()",
-  "map()", "filter()", "collect()", "sorted()", "count()", "sum()", "min()",
-  "max()", "abs()", "pow()", "sqrt()", "floor()", "ceil()", "round()", "random()",
-  "keySet()", "values()", "entrySet()", "getOrDefault()", "append()", "reverse()",
-  "next()", "nextInt()", "nextLine()", "hasNext()", "close()", "sort()", "asList()",
-  "copyOf()", "of()", "toArray()", "compareTo()",
-]);
+/** Build member Completions; a trailing `()` marks a method, ALL_CAPS a constant. */
+function javaMembers(owner: string, names: string[], boost = 0): Completion[] {
+  return names.map((n) => {
+    const isMethod = n.endsWith("()");
+    const label = isMethod ? n.slice(0, -2) : n;
+    return {
+      label,
+      apply: isMethod ? `${label}()` : label,
+      detail: owner,
+      type: isMethod ? "method" : /^[A-Z][A-Z_0-9]*$/.test(label) ? "constant" : "property",
+      boost,
+    };
+  });
+}
+
+/**
+ * Static members per JDK class — served when the receiver before the dot is a
+ * known class name (`Math.`, `Collectors.`, `System.out.`…), like IntelliJ.
+ */
+const JAVA_STATIC_MEMBERS: Record<string, string[]> = {
+  System: [
+    "out", "err", "in", "currentTimeMillis()", "nanoTime()", "arraycopy()", "exit()",
+    "getenv()", "getProperty()", "setProperty()", "lineSeparator()", "identityHashCode()",
+  ],
+  "System.out": ["println()", "print()", "printf()", "format()", "append()", "flush()", "write()"],
+  "System.err": ["println()", "print()", "printf()", "format()", "append()", "flush()", "write()"],
+  Math: [
+    "PI", "E", "abs()", "max()", "min()", "pow()", "sqrt()", "cbrt()", "floor()", "ceil()",
+    "round()", "random()", "log()", "log10()", "exp()", "sin()", "cos()", "tan()", "asin()",
+    "acos()", "atan()", "atan2()", "sinh()", "cosh()", "tanh()", "hypot()", "signum()",
+    "toRadians()", "toDegrees()", "floorDiv()", "floorMod()", "addExact()", "subtractExact()",
+    "multiplyExact()", "negateExact()", "toIntExact()", "clamp()", "fma()",
+  ],
+  String: ["valueOf()", "format()", "join()", "copyValueOf()", "CASE_INSENSITIVE_ORDER"],
+  Integer: [
+    "MAX_VALUE", "MIN_VALUE", "SIZE", "BYTES", "parseInt()", "parseUnsignedInt()", "valueOf()",
+    "toString()", "toBinaryString()", "toOctalString()", "toHexString()", "compare()", "max()",
+    "min()", "sum()", "signum()", "bitCount()", "reverse()", "highestOneBit()", "lowestOneBit()",
+    "numberOfLeadingZeros()", "numberOfTrailingZeros()",
+  ],
+  Long: [
+    "MAX_VALUE", "MIN_VALUE", "parseLong()", "valueOf()", "toString()", "toBinaryString()",
+    "toHexString()", "compare()", "max()", "min()", "sum()", "bitCount()", "signum()",
+  ],
+  Double: [
+    "MAX_VALUE", "MIN_VALUE", "POSITIVE_INFINITY", "NEGATIVE_INFINITY", "NaN",
+    "parseDouble()", "valueOf()", "toString()", "compare()", "max()", "min()", "sum()",
+    "isNaN()", "isInfinite()", "isFinite()",
+  ],
+  Float: ["MAX_VALUE", "MIN_VALUE", "parseFloat()", "valueOf()", "compare()", "isNaN()"],
+  Boolean: ["TRUE", "FALSE", "parseBoolean()", "valueOf()", "toString()", "logicalAnd()", "logicalOr()", "logicalXor()"],
+  Character: [
+    "MAX_VALUE", "MIN_VALUE", "isDigit()", "isLetter()", "isLetterOrDigit()", "isWhitespace()",
+    "isUpperCase()", "isLowerCase()", "isAlphabetic()", "toUpperCase()", "toLowerCase()",
+    "getNumericValue()", "valueOf()", "compare()",
+  ],
+  Byte: ["MAX_VALUE", "MIN_VALUE", "parseByte()", "valueOf()"],
+  Short: ["MAX_VALUE", "MIN_VALUE", "parseShort()", "valueOf()"],
+  Objects: [
+    "equals()", "deepEquals()", "hash()", "hashCode()", "toString()", "isNull()", "nonNull()",
+    "requireNonNull()", "requireNonNullElse()", "requireNonNullElseGet()", "checkIndex()",
+  ],
+  Arrays: [
+    "asList()", "sort()", "parallelSort()", "binarySearch()", "fill()", "copyOf()",
+    "copyOfRange()", "equals()", "deepEquals()", "toString()", "deepToString()", "stream()",
+    "setAll()", "hashCode()", "deepHashCode()", "compare()", "mismatch()",
+  ],
+  Collections: [
+    "sort()", "reverse()", "shuffle()", "swap()", "max()", "min()", "frequency()", "disjoint()",
+    "binarySearch()", "fill()", "nCopies()", "rotate()", "addAll()", "emptyList()", "emptySet()",
+    "emptyMap()", "singletonList()", "singleton()", "singletonMap()", "unmodifiableList()",
+    "unmodifiableSet()", "unmodifiableMap()", "synchronizedList()", "synchronizedMap()",
+    "reverseOrder()",
+  ],
+  List: ["of()", "copyOf()"],
+  Set: ["of()", "copyOf()"],
+  Map: ["of()", "ofEntries()", "entry()", "copyOf()"],
+  Stream: ["of()", "empty()", "iterate()", "generate()", "concat()", "ofNullable()"],
+  IntStream: ["range()", "rangeClosed()", "of()", "iterate()", "generate()", "concat()", "empty()"],
+  LongStream: ["range()", "rangeClosed()", "of()", "iterate()", "generate()", "empty()"],
+  DoubleStream: ["of()", "iterate()", "generate()", "empty()"],
+  Collectors: [
+    "toList()", "toUnmodifiableList()", "toSet()", "toUnmodifiableSet()", "toMap()",
+    "toUnmodifiableMap()", "toCollection()", "joining()", "counting()", "groupingBy()",
+    "partitioningBy()", "mapping()", "filtering()", "flatMapping()", "reducing()",
+    "summingInt()", "summingLong()", "summingDouble()", "averagingInt()", "averagingLong()",
+    "averagingDouble()", "summarizingInt()", "summarizingDouble()", "minBy()", "maxBy()",
+    "collectingAndThen()", "teeing()",
+  ],
+  Optional: ["of()", "ofNullable()", "empty()"],
+  Comparator: [
+    "comparing()", "comparingInt()", "comparingLong()", "comparingDouble()",
+    "naturalOrder()", "reverseOrder()", "nullsFirst()", "nullsLast()",
+  ],
+  LocalDate: ["now()", "of()", "parse()", "ofEpochDay()", "ofYearDay()", "EPOCH", "MIN", "MAX"],
+  LocalDateTime: ["now()", "of()", "parse()", "ofInstant()", "ofEpochSecond()", "MIN", "MAX"],
+  LocalTime: ["now()", "of()", "parse()", "MIDNIGHT", "NOON", "MIN", "MAX"],
+  Instant: ["now()", "parse()", "ofEpochMilli()", "ofEpochSecond()", "EPOCH", "MIN", "MAX"],
+  Duration: [
+    "ofDays()", "ofHours()", "ofMinutes()", "ofSeconds()", "ofMillis()", "ofNanos()",
+    "between()", "parse()", "ZERO",
+  ],
+  Period: ["of()", "ofDays()", "ofMonths()", "ofYears()", "ofWeeks()", "between()", "parse()", "ZERO"],
+  ZonedDateTime: ["now()", "of()", "parse()", "ofInstant()"],
+  ZoneId: ["of()", "systemDefault()", "getAvailableZoneIds()"],
+  DateTimeFormatter: [
+    "ofPattern()", "ISO_DATE", "ISO_DATE_TIME", "ISO_LOCAL_DATE", "ISO_LOCAL_DATE_TIME",
+    "ISO_LOCAL_TIME", "ISO_INSTANT", "BASIC_ISO_DATE", "RFC_1123_DATE_TIME",
+  ],
+  ChronoUnit: [
+    "NANOS", "MILLIS", "SECONDS", "MINUTES", "HOURS", "HALF_DAYS", "DAYS", "WEEKS",
+    "MONTHS", "YEARS", "DECADES", "CENTURIES", "FOREVER",
+  ],
+  Files: [
+    "exists()", "notExists()", "readAllLines()", "readAllBytes()", "readString()", "write()",
+    "writeString()", "lines()", "list()", "walk()", "find()", "copy()", "move()", "delete()",
+    "deleteIfExists()", "createFile()", "createDirectory()", "createDirectories()",
+    "createTempFile()", "newBufferedReader()", "newBufferedWriter()", "newInputStream()",
+    "newOutputStream()", "size()", "isDirectory()", "isRegularFile()", "isReadable()",
+    "isWritable()", "getLastModifiedTime()",
+  ],
+  Path: ["of()"],
+  Paths: ["get()"],
+  Pattern: ["compile()", "matches()", "quote()", "CASE_INSENSITIVE", "MULTILINE", "DOTALL", "UNICODE_CASE"],
+  UUID: ["randomUUID()", "fromString()", "nameUUIDFromBytes()"],
+  ThreadLocalRandom: ["current()"],
+  BigDecimal: ["ZERO", "ONE", "TEN", "valueOf()"],
+  BigInteger: ["ZERO", "ONE", "TWO", "TEN", "valueOf()", "probablePrime()"],
+  Thread: [
+    "sleep()", "currentThread()", "ofVirtual()", "ofPlatform()", "startVirtualThread()",
+    "onSpinWait()", "MAX_PRIORITY", "MIN_PRIORITY", "NORM_PRIORITY",
+  ],
+  Executors: [
+    "newFixedThreadPool()", "newCachedThreadPool()", "newSingleThreadExecutor()",
+    "newScheduledThreadPool()", "newWorkStealingPool()", "newVirtualThreadPerTaskExecutor()",
+  ],
+  CompletableFuture: [
+    "completedFuture()", "supplyAsync()", "runAsync()", "allOf()", "anyOf()", "failedFuture()",
+  ],
+  TimeUnit: ["NANOSECONDS", "MICROSECONDS", "MILLISECONDS", "SECONDS", "MINUTES", "HOURS", "DAYS"],
+  StandardCharsets: ["UTF_8", "US_ASCII", "ISO_8859_1", "UTF_16", "UTF_16BE", "UTF_16LE"],
+  Function: ["identity()"],
+  Predicate: ["isEqual()", "not()"],
+  UnaryOperator: ["identity()"],
+  RoundingMode: ["HALF_UP", "HALF_DOWN", "HALF_EVEN", "UP", "DOWN", "CEILING", "FLOOR"],
+};
+
+/**
+ * Instance members by API family — served when the receiver is a variable or a
+ * call chain, deduplicated by label (first family wins the `detail` tag).
+ */
+const JAVA_INSTANCE_GROUPS: Array<[owner: string, names: string[]]> = [
+  ["String", [
+    "length()", "isEmpty()", "isBlank()", "charAt()", "substring()", "indexOf()",
+    "lastIndexOf()", "contains()", "startsWith()", "endsWith()", "equals()",
+    "equalsIgnoreCase()", "compareTo()", "compareToIgnoreCase()", "matches()", "replace()",
+    "replaceAll()", "replaceFirst()", "split()", "trim()", "strip()", "stripLeading()",
+    "stripTrailing()", "toLowerCase()", "toUpperCase()", "concat()", "repeat()", "lines()",
+    "chars()", "toCharArray()", "getBytes()", "formatted()", "indent()", "intern()", "hashCode()",
+  ]],
+  ["List", [
+    "add()", "addAll()", "addFirst()", "addLast()", "get()", "getFirst()", "getLast()",
+    "set()", "remove()", "removeIf()", "removeAll()", "retainAll()", "clear()",
+    "containsAll()", "size()", "sort()", "subList()", "toArray()", "iterator()", "forEach()",
+    "stream()", "parallelStream()", "reversed()",
+  ]],
+  ["Map", [
+    "put()", "putAll()", "putIfAbsent()", "getOrDefault()", "merge()", "compute()",
+    "computeIfAbsent()", "computeIfPresent()", "containsKey()", "containsValue()",
+    "keySet()", "values()", "entrySet()",
+  ]],
+  ["Map.Entry", ["getKey()", "getValue()", "setValue()"]],
+  ["Deque", [
+    "push()", "pop()", "poll()", "peek()", "offer()", "element()", "pollFirst()",
+    "pollLast()", "peekFirst()", "peekLast()", "offerFirst()", "offerLast()",
+    "removeFirst()", "removeLast()",
+  ]],
+  ["Stream", [
+    "map()", "mapToInt()", "mapToLong()", "mapToDouble()", "mapToObj()", "filter()",
+    "flatMap()", "distinct()", "sorted()", "peek()", "limit()", "skip()", "takeWhile()",
+    "dropWhile()", "forEachOrdered()", "collect()", "reduce()", "toList()", "count()",
+    "sum()", "average()", "min()", "max()", "anyMatch()", "allMatch()", "noneMatch()",
+    "findFirst()", "findAny()", "boxed()", "asLongStream()", "asDoubleStream()",
+    "parallel()", "sequential()",
+  ]],
+  ["Optional", [
+    "isPresent()", "ifPresent()", "ifPresentOrElse()", "orElse()", "orElseGet()",
+    "orElseThrow()", "or()",
+  ]],
+  ["StringBuilder", [
+    "append()", "insert()", "delete()", "deleteCharAt()", "setCharAt()", "setLength()",
+    "reverse()", "capacity()", "toString()",
+  ]],
+  ["Scanner", [
+    "next()", "nextLine()", "nextInt()", "nextLong()", "nextDouble()", "nextBoolean()",
+    "nextBigDecimal()", "hasNext()", "hasNextLine()", "hasNextInt()", "hasNextDouble()",
+    "useDelimiter()", "close()",
+  ]],
+  ["Matcher", [
+    "find()", "group()", "groupCount()", "start()", "end()", "lookingAt()", "reset()",
+  ]],
+  ["Pattern", ["matcher()", "pattern()", "asPredicate()", "splitAsStream()"]],
+  ["Number", ["intValue()", "longValue()", "doubleValue()", "floatValue()", "byteValue()", "shortValue()"]],
+  ["BigDecimal", [
+    "add()", "subtract()", "multiply()", "divide()", "divideAndRemainder()", "remainder()",
+    "negate()", "abs()", "pow()", "setScale()", "scale()", "precision()", "signum()",
+    "stripTrailingZeros()", "toPlainString()", "movePointLeft()", "movePointRight()",
+  ]],
+  ["java.time", [
+    "plusDays()", "plusWeeks()", "plusMonths()", "plusYears()", "plusHours()",
+    "plusMinutes()", "plusSeconds()", "minusDays()", "minusWeeks()", "minusMonths()",
+    "minusYears()", "minusHours()", "minusMinutes()", "minusSeconds()", "getYear()",
+    "getMonth()", "getMonthValue()", "getDayOfMonth()", "getDayOfWeek()", "getDayOfYear()",
+    "getHour()", "getMinute()", "getSecond()", "format()", "isBefore()", "isAfter()",
+    "isEqual()", "isLeapYear()", "atStartOfDay()", "atTime()", "atZone()", "withYear()",
+    "withMonth()", "withDayOfMonth()", "until()", "toEpochDay()", "toLocalDate()",
+    "toLocalTime()", "toEpochMilli()", "truncatedTo()", "lengthOfMonth()", "lengthOfYear()",
+  ]],
+  ["Duration", [
+    "toDays()", "toHours()", "toMinutes()", "toSeconds()", "toMillis()", "toNanos()",
+    "plus()", "minus()", "multipliedBy()", "dividedBy()", "isZero()", "isNegative()",
+  ]],
+  ["CompletableFuture", [
+    "thenApply()", "thenApplyAsync()", "thenAccept()", "thenRun()", "thenCompose()",
+    "thenCombine()", "exceptionally()", "handle()", "whenComplete()", "complete()",
+    "completeExceptionally()", "cancel()", "isDone()", "isCancelled()", "join()",
+  ]],
+  ["Thread", [
+    "start()", "interrupt()", "isAlive()", "isInterrupted()", "setDaemon()", "setName()",
+    "getName()", "setPriority()",
+  ]],
+  ["Random", ["nextGaussian()", "ints()", "doubles()", "longs()"]],
+  ["Throwable", [
+    "getMessage()", "getLocalizedMessage()", "getCause()", "getStackTrace()",
+    "printStackTrace()", "initCause()", "addSuppressed()",
+  ]],
+  ["Comparator", ["thenComparing()", "thenComparingInt()", "thenComparingDouble()"]],
+  ["functional", ["apply()", "test()", "accept()", "andThen()", "compose()"]],
+  ["Iterator", ["hasNext()", "remove()"]],
+  ["Enum", ["name()", "ordinal()", "compareTo()"]],
+  ["Object", ["equals()", "getClass()", "wait()", "notify()", "notifyAll()"]],
+  ["array", ["length", "clone()"]],
+];
+
+const JAVA_INSTANCE_CATALOG: Completion[] = (() => {
+  const seen = new Map<string, Completion>();
+  for (const [owner, names] of JAVA_INSTANCE_GROUPS) {
+    for (const option of javaMembers(owner, names)) {
+      if (!seen.has(option.label)) seen.set(option.label, option);
+    }
+  }
+  return [...seen.values()];
+})();
+
+const javaStaticCompletions = new Map<string, Completion[]>();
+
+function staticMembersOf(receiver: string): Completion[] | undefined {
+  const names = JAVA_STATIC_MEMBERS[receiver];
+  if (!names) return undefined;
+  let cached = javaStaticCompletions.get(receiver);
+  if (!cached) {
+    cached = javaMembers(receiver, names, 2);
+    javaStaticCompletions.set(receiver, cached);
+  }
+  return cached;
+}
+
+const STRING_LITERAL_MEMBERS = javaMembers("String", JAVA_INSTANCE_GROUPS[0][1], 2);
+
+/**
+ * Receiver-aware `.` completion: known class names get their static members
+ * ("System.out" chains included), string literals get String members, and
+ * everything else (variables, call chains) gets the instance catalog.
+ */
+const javaMemberSource: CompletionSource = (context) => {
+  // "literal".<prefix> → String instance members
+  const literal = context.matchBefore(/"\.[\w$]*$/);
+  if (literal) {
+    return { from: literal.from + 2, options: STRING_LITERAL_MEMBERS, validFor: /^[\w$]*$/ };
+  }
+
+  // identifier(.identifier)*.<prefix> → static members if the receiver is known
+  const chain = context.matchBefore(/[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*\.[\w$]*$/);
+  if (chain) {
+    const lastDot = chain.text.lastIndexOf(".");
+    const receiver = chain.text.slice(0, lastDot);
+    const lastSegment = receiver.slice(receiver.lastIndexOf(".") + 1);
+    const options =
+      staticMembersOf(receiver) ?? staticMembersOf(lastSegment) ?? JAVA_INSTANCE_CATALOG;
+    return { from: chain.from + lastDot + 1, options, validFor: /^[\w$]*$/ };
+  }
+
+  // any other `.` (after `)`, `]`…) → instance catalog, e.g. list.stream().<prefix>
+  const dot = context.matchBefore(/\.[\w$]*$/);
+  if (dot) {
+    return { from: dot.from + 1, options: JAVA_INSTANCE_CATALOG, validFor: /^[\w$]*$/ };
+  }
+  return null;
+};
 
 /** IntelliJ live templates, same abbreviations (sout, psvm, fori, iter…). */
 const JAVA_SNIPPETS: Completion[] = [
@@ -250,7 +562,7 @@ function smartSources(language: SupportedLanguage): CompletionSource[] {
     case "java":
       return [
         completeFromList([...JAVA_SNIPPETS, ...typeList(JAVA_TYPES)]),
-        memberSource(JAVA_MEMBERS),
+        javaMemberSource,
         ...basicSources(language),
       ];
     case "python":
