@@ -5,17 +5,22 @@ import { usePathname } from "next/navigation";
 
 import { useI18n } from "@/lib/i18n/use-lang";
 import { CATEGORIES, getToolsByCategory } from "@/lib/registry/tools";
-import { toolPath } from "@/lib/registry/types";
+import { toolPath, type CategoryId } from "@/lib/registry/types";
 import { cn } from "@/lib/utils";
 
-/** Registry-driven navigation list, shared by the desktop sidebar and the mobile drawer. */
-export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
+/**
+ * Registry-driven navigation list, shared by the desktop sidebar and the mobile drawer.
+ * With `category` set, only that category's tools are listed (desktop sidebar);
+ * without it, all categories are shown (mobile drawer).
+ */
+export function SidebarNav({ category, onNavigate }: { category?: CategoryId; onNavigate?: () => void }) {
   const pathname = usePathname();
   const { t, lang } = useI18n();
+  const categories = category ? CATEGORIES.filter((c) => c.id === category) : CATEGORIES;
 
   return (
     <nav aria-label={lang === "vi" ? "Danh mục công cụ" : "Tool categories"} className="space-y-6">
-      {CATEGORIES.map((category) => {
+      {categories.map((category) => {
         const tools = getToolsByCategory(category.id);
         if (tools.length === 0) return null;
 

@@ -9,7 +9,9 @@ import { LanguageToggle } from "@/components/i18n/language-toggle";
 import { SidebarNav } from "@/components/layout/sidebar-nav";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { useI18n } from "@/lib/i18n/use-lang";
-import { SITE } from "@/lib/registry/tools";
+import { CATEGORIES, getToolsByCategory, SITE } from "@/lib/registry/tools";
+import { toolPath } from "@/lib/registry/types";
+import { cn } from "@/lib/utils";
 
 const M = {
   home: { vi: "Trang chủ", en: "Home" },
@@ -35,10 +37,46 @@ function Logo() {
   );
 }
 
+/** Horizontal category menu in the header; each item links to the category's first tool. */
+function CategoryNav() {
+  const pathname = usePathname();
+  const { t, lang } = useI18n();
+
+  return (
+    <nav aria-label={lang === "vi" ? "Danh mục" : "Categories"} className="hidden items-center gap-1 lg:flex">
+      {CATEGORIES.map((category) => {
+        const tools = getToolsByCategory(category.id);
+        if (tools.length === 0) return null;
+        const active = pathname.startsWith(`/tools/${category.id}/`);
+
+        return (
+          <Link
+            key={category.id}
+            href={toolPath(tools[0])}
+            aria-current={active ? "true" : undefined}
+            className={cn(
+              "flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm transition-colors",
+              active
+                ? "bg-primary/10 font-medium text-primary"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground",
+            )}
+          >
+            <category.icon className="h-4 w-4" />
+            {t(category.name)}
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
+
 export function AppShell({ children }: { children: ReactNode }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const pathname = usePathname();
   const { t } = useI18n();
+
+  // Category of the current tool route; undefined on the home page (no sidebar there)
+  const activeCategory = CATEGORIES.find((c) => pathname.startsWith(`/tools/${c.id}/`))?.id;
 
   // Close the mobile drawer on navigation (adjust-state-during-render pattern)
   const [prevPathname, setPrevPathname] = useState(pathname);
@@ -72,8 +110,12 @@ export function AppShell({ children }: { children: ReactNode }) {
 
           <Logo />
 
+          <div className="ml-2">
+            <CategoryNav />
+          </div>
+
           <div className="ml-auto flex items-center gap-2">
-            <span className="hidden font-mono text-[11px] text-muted-foreground md:inline">
+            <span className="hidden font-mono text-[11px] text-muted-foreground xl:inline">
               ~/tools <span className="cursor-blink" />
             </span>
             <LanguageToggle />
@@ -83,10 +125,12 @@ export function AppShell({ children }: { children: ReactNode }) {
       </header>
 
       <div className="mx-auto flex w-full max-w-[1440px] flex-1">
-        {/* ---- Desktop sidebar ---- */}
-        <aside className="sticky top-14 hidden h-[calc(100dvh-3.5rem)] w-60 shrink-0 overflow-y-auto border-r border-border/60 px-3 py-5 lg:block">
-          <SidebarNav />
-        </aside>
+        {/* ---- Desktop sidebar: tools of the active category only ---- */}
+        {activeCategory ? (
+          <aside className="sticky top-14 hidden h-[calc(100dvh-3.5rem)] w-60 shrink-0 overflow-y-auto border-r border-border/60 px-3 py-5 lg:block">
+            <SidebarNav category={activeCategory} />
+          </aside>
+        ) : null}
 
         {/* ---- Mobile drawer ---- */}
         {drawerOpen ? (
