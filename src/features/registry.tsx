@@ -34,6 +34,18 @@ const FEATURES: Record<string, ComponentType> = {
   salary: dynamic(() => import("@/features/salary/salary-tool"), { ssr: false, loading }),
   "lunar-calendar": dynamic(() => import("@/features/lunar-calendar/lunar-calendar-tool"), { ssr: false, loading }),
   "code-editor": dynamic(() => import("@/features/code-editor/code-editor-tool"), { ssr: false, loading }),
+  "json-toolkit": dynamic(() => import("@/features/json-toolkit/json-toolkit-tool"), { ssr: false, loading }),
+  "json-converter": dynamic(() => import("@/features/json-converter/json-converter-tool"), { ssr: false, loading }),
+  jwt: dynamic(() => import("@/features/jwt/jwt-tool"), { ssr: false, loading }),
+  "base64-url": dynamic(() => import("@/features/base64-url/base64-url-tool"), { ssr: false, loading }),
+  uuid: dynamic(() => import("@/features/uuid/uuid-tool"), { ssr: false, loading }),
+  "regex-tester": dynamic(() => import("@/features/regex-tester/regex-tester-tool"), { ssr: false, loading }),
+  diff: dynamic(() => import("@/features/diff/diff-tool"), { ssr: false, loading }),
+  cron: dynamic(() => import("@/features/cron/cron-tool"), { ssr: false, loading }),
+  hash: dynamic(() => import("@/features/hash/hash-tool"), { ssr: false, loading }),
+  "sql-formatter": dynamic(() => import("@/features/sql-formatter/sql-formatter-tool"), { ssr: false, loading }),
+  "curl-converter": dynamic(() => import("@/features/curl-converter/curl-converter-tool"), { ssr: false, loading }),
+  "openapi-viewer": dynamic(() => import("@/features/openapi-viewer/openapi-viewer-tool"), { ssr: false, loading }),
   traffic: dynamic(() => import("@/features/traffic/traffic-tool"), { ssr: false, loading }),
 };
 

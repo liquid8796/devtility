@@ -25,7 +25,21 @@
 | **Lịch vạn niên** | Âm lịch (thuật toán thiên văn Hồ Ngọc Đức), can chi, tiết khí, giờ hoàng đạo, ngày hoàng/hắc đạo, đổi dương ↔ âm |
 
 ### 💻 Technology
-- **Code Editor Online** — soạn thảo với syntax highlighting (CodeMirror 6), **code completion kiểu IntelliJ** (Basic/Smart, live templates `sout`/`psvm`/`fori`, Ctrl+Space), chạy **Java, Python** (server qua Wandbox) và **JavaScript** (Web Worker sandbox ngay trong trình duyệt), chia sẻ snippet qua Vercel Blob.
+| Công cụ | Mô tả |
+|---|---|
+| **Code Editor Online** | Syntax highlighting (CodeMirror 6), **code completion kiểu IntelliJ** (Basic/Smart, live templates `sout`/`psvm`/`fori`, Ctrl+Space), chạy Java/Python (Wandbox) & JavaScript (Web Worker sandbox), chia sẻ snippet qua Vercel Blob |
+| **JSON Toolkit** | Format, minify, validate (báo dòng/cột lỗi), tree view, sort key, escape/unescape |
+| **JSON Converter** | JSON ⇄ YAML ⇄ XML ⇄ TOML ⇄ CSV với cảnh báo lossy rõ ràng |
+| **JWT Inspector** | Decode header/payload, kiểm tra exp/nbf/iat/iss/aud, verify HS/RS/ES bằng secret hoặc JWK, tạo JWT mới |
+| **Base64 & URL** | Base64 thường + URL-safe (UTF-8 chuẩn), URL encode/decode, query-string parser |
+| **UUID Toolkit** | UUID v4/v7, ULID, NanoID; validate + trích timestamp; sinh hàng loạt tới 1000 |
+| **Regex Tester** | Highlight match, capture groups, replace preview, quick reference, snippet Java/JS/Python |
+| **Diff Checker** | Text diff (dòng/từ/ký tự, bỏ qua whitespace/hoa thường) + JSON semantic diff theo path |
+| **Cron Builder** | Visual builder 5 trường, giải thích biểu thức (song ngữ), 10 lần chạy tiếp theo đa timezone |
+| **Hash & HMAC** | MD5, SHA-1/256/512, HMAC, checksum file (chạy hoàn toàn trong trình duyệt), bcrypt verify/generate |
+| **SQL Formatter** | Format/minify + syntax highlight, hỗ trợ MySQL, PostgreSQL, Oracle (PL/SQL) |
+| **cURL Converter** | cURL (kể cả Postman export, grpcurl) → fetch / Axios / Java HttpClient / Spring WebClient, model chỉnh sửa được |
+| **OpenAPI Viewer** | Đọc Swagger/OpenAPI JSON/YAML, duyệt endpoint theo tag, sinh request mẫu cURL/fetch |
 
 ### 📊 Thống kê
 - Đếm lượt truy cập theo **giờ / ngày / tháng / năm** (Redis), biểu đồ + top trang được xem nhiều nhất. Không dùng cookie.
