@@ -1,17 +1,11 @@
 "use client";
 
 import { Languages } from "lucide-react";
-import { useEffect } from "react";
 
 import { useI18n } from "@/lib/i18n/use-lang";
 
 export function LanguageToggle() {
   const { lang, setLang } = useI18n();
-
-  // Keep <html lang> in sync with the restored preference (external system → effect is fine)
-  useEffect(() => {
-    if (document.documentElement.lang !== lang) document.documentElement.lang = lang;
-  }, [lang]);
 
   const next = lang === "vi" ? "en" : "vi";
 

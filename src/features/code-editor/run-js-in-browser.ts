@@ -1,6 +1,8 @@
 /**
  * Runs JavaScript inside a sandboxed Web Worker (no DOM, no cookies, no parent
- * access) with a hard timeout. console.* output is captured and returned.
+ * access) with a hard timeout. Network/storage escape hatches (fetch, XHR,
+ * WebSocket, importScripts, …) are neutralized before user code runs.
+ * console.* output is captured and returned.
  */
 
 export interface BrowserRunResult {
@@ -10,7 +12,32 @@ export interface BrowserRunResult {
 }
 
 const WORKER_SOURCE = `
+  // Capture internals first so user code cannot tamper with them.
+  const post = self.postMessage.bind(self);
+  const close = self.close.bind(self);
+  const schedule = self.setTimeout.bind(self);
+  // Neutralize network/storage escape hatches; a failure on one must not crash the run.
+  for (const key of ["fetch", "XMLHttpRequest", "WebSocket", "EventSource", "importScripts", "indexedDB", "caches"]) {
+    try {
+      Object.defineProperty(self, key, { value: undefined, writable: false, configurable: false });
+    } catch {
+      try {
+        self[key] = undefined;
+      } catch {}
+      try {
+        delete self[key];
+      } catch {}
+    }
+  }
+  try {
+    if (self.navigator && "sendBeacon" in self.navigator) {
+      Object.defineProperty(self.navigator, "sendBeacon", { value: undefined, writable: false, configurable: false });
+    }
+  } catch {}
+  const MAX_LOGS = 1000;
   const logs = [];
+  let truncated = false;
+  let finished = false;
   const format = (value) => {
     if (typeof value === "string") return value;
     if (value instanceof Error) return value.stack || String(value);
@@ -20,29 +47,35 @@ const WORKER_SOURCE = `
       return String(value);
     }
   };
-  for (const type of ["log", "warn", "error", "info"]) {
-    console[type] = (...args) => {
-      logs.push({ type, text: args.map(format).join(" ") });
-      if (logs.length > 1000) {
-        logs.push({ type: "warn", text: "— đã cắt bớt output (quá 1000 dòng) —" });
-        finish(null);
-      }
-    };
-  }
-  let finished = false;
   const finish = (error) => {
     if (finished) return;
     finished = true;
-    self.postMessage({ logs: logs.slice(0, 1001), error });
-    self.close();
+    if (truncated) {
+      logs.push({ type: "warn", text: "— đã cắt bớt output (quá 1000 dòng) / output truncated (over 1000 lines) —" });
+    }
+    post({ logs, error });
+    close();
   };
+  for (const type of ["log", "warn", "error", "info"]) {
+    console[type] = (...args) => {
+      if (finished) return;
+      if (logs.length >= MAX_LOGS) {
+        if (!truncated) {
+          truncated = true;
+          finish(null);
+        }
+        return;
+      }
+      logs.push({ type, text: args.map(format).join(" ") });
+    };
+  }
   self.onmessage = async (event) => {
-    const start = performance.now();
     try {
       const fn = new Function(event.data.code);
       const result = fn();
       if (result instanceof Promise) await result;
-      finish(null);
+      // Grace period so console output from already-queued 0ms callbacks still flushes.
+      schedule(() => finish(null), 50);
     } catch (err) {
       finish(err instanceof Error ? (err.stack || err.message) : String(err));
     }

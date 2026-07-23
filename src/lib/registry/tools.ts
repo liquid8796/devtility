@@ -78,7 +78,7 @@ export const CATEGORIES: Category[] = [
   },
 ];
 
-export const TOOLS: ToolDefinition[] = [
+export const TOOLS = [
   // ---- Converters ----
   {
     slug: "timezone",
@@ -376,7 +376,10 @@ export const TOOLS: ToolDefinition[] = [
     icon: BarChart3,
     keywords: ["thống kê", "analytics", "traffic", "truy cập"],
   },
-];
+] as const satisfies readonly ToolDefinition[];
+
+/** Union of every registered slug — lets consumers (e.g. the feature map) stay in lockstep at compile time. */
+export type ToolSlug = (typeof TOOLS)[number]["slug"];
 
 export function getCategory(id: CategoryId): Category {
   const category = CATEGORIES.find((c) => c.id === id);

@@ -34,7 +34,7 @@ export interface ToolDefinition {
   shortName: Localized;
   description: Localized;
   icon: LucideIcon;
-  keywords: string[];
+  keywords: readonly string[];
   status?: "stable" | "beta";
 }
 

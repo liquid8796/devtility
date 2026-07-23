@@ -97,7 +97,8 @@ export async function getPairHistory(
     let writes = 0;
     for (const { date, rate } of fetched) {
       if (rate !== null) {
-        pipeline.set(cacheKey(date), rate);
+        // TTL keeps key growth bounded (~400 days covers the longest range with slack)
+        pipeline.set(cacheKey(date), rate, { ex: 60 * 60 * 24 * 400 });
         writes++;
       }
     }

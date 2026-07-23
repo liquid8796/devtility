@@ -2,12 +2,21 @@ import { NextResponse } from "next/server";
 
 import { ExecutionRateLimitError, getExecutionProvider } from "@/server/execute";
 import { SUPPORTED_LANGUAGES, type SupportedLanguage } from "@/server/execute/types";
+import { checkRateLimit } from "@/server/rate-limit";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
 const MAX_CODE_BYTES = 128 * 1024;
 const MAX_STDIN_BYTES = 16 * 1024;
+const RATE_LIMIT = 10;
+const RATE_WINDOW_SECONDS = 60;
+
+/** Client identity for rate limiting: first x-forwarded-for hop, then x-real-ip. */
+function getClientId(request: Request): string {
+  const forwarded = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+  return forwarded || request.headers.get("x-real-ip") || "unknown";
+}
 
 interface ExecuteBody {
   language?: unknown;
@@ -17,6 +26,19 @@ interface ExecuteBody {
 }
 
 export async function POST(request: Request): Promise<NextResponse> {
+  const rate = await checkRateLimit({
+    scope: "execute",
+    id: getClientId(request),
+    limit: RATE_LIMIT,
+    windowSeconds: RATE_WINDOW_SECONDS,
+  });
+  if (!rate.allowed) {
+    return NextResponse.json(
+      { error: "Bạn gửi yêu cầu quá nhanh (tối đa 10 lần/phút). Vui lòng thử lại sau vài giây." },
+      { status: 429, headers: { "Retry-After": String(rate.retryAfterSeconds) } },
+    );
+  }
+
   let body: ExecuteBody;
   try {
     body = (await request.json()) as ExecuteBody;

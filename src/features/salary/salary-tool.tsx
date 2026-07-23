@@ -144,10 +144,6 @@ const M = {
     vi: "Chưa có dữ liệu để tính chi phí doanh nghiệp.",
     en: "No data yet to calculate employer cost.",
   },
-  disclaimer: {
-    vi: "Số liệu tính theo quy định hiện hành (lương cơ sở 2,34 triệu; lương tối thiểu vùng từ 01/07/2024; giảm trừ gia cảnh theo chế độ đã chọn). Kết quả mang tính tham khảo.",
-    en: "Figures follow current regulations (statutory base salary of 2.34 million ₫; regional minimum wage effective 01/07/2024; family deductions per the selected scheme). Results are for reference only.",
-  },
 } satisfies Record<string, Localized>;
 
 const PRESETS: Record<PresetKey, TaxConfig> = {
@@ -312,6 +308,9 @@ export default function SalaryTool() {
       : undefined;
 
   const dependentDeductionStr = formatDecimalVN(config.dependentDeduction, 0, locale);
+  const personalDeductionStr = formatDecimalVN(config.personalDeduction, 0, locale);
+  const baseSalaryStr = formatDecimalVN(config.baseSalary, 0, locale);
+  const regionMinWageStr = formatDecimalVN(config.regionalMinWage[region], 0, locale);
   const regionNumeral = ["I", "II", "III", "IV"][region - 1];
 
   return (
@@ -593,7 +592,12 @@ export default function SalaryTool() {
 
       <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
         <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
-        <span>{t(M.disclaimer)}</span>
+        <span>
+          {t({
+            vi: `Số liệu tính theo chế độ ${config.label.vi}: lương cơ sở ${baseSalaryStr} ₫; lương tối thiểu vùng ${regionNumeral} ${regionMinWageStr} ₫; giảm trừ gia cảnh ${personalDeductionStr} ₫ bản thân / ${dependentDeductionStr} ₫ mỗi người phụ thuộc. Kết quả mang tính tham khảo.`,
+            en: `Figures follow the ${config.label.en} scheme: statutory base salary ${baseSalaryStr} ₫; Region ${regionNumeral} minimum wage ${regionMinWageStr} ₫; family deductions of ${personalDeductionStr} ₫ personal / ${dependentDeductionStr} ₫ per dependent. Results are for reference only.`,
+          })}
+        </span>
       </p>
     </div>
   );

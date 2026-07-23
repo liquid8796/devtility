@@ -3,6 +3,10 @@
 import dynamic from "next/dynamic";
 import type { ComponentType } from "react";
 
+import type { Localized } from "@/lib/i18n";
+import { useI18n } from "@/lib/i18n/use-lang";
+import type { ToolSlug } from "@/lib/registry/tools";
+
 /**
  * Maps a tool slug to its (lazily loaded) feature component.
  * Tools run fully client-side; ssr is disabled so browser APIs
@@ -22,7 +26,25 @@ function ToolSkeleton() {
 
 const loading = () => <ToolSkeleton />;
 
-const FEATURES: Record<string, ComponentType> = {
+const M = {
+  notRegistered: {
+    vi: "Công cụ này chưa được đăng ký trong",
+    en: "This tool is not registered in",
+  },
+} satisfies Record<string, Localized>;
+
+function MissingTool() {
+  const { t } = useI18n();
+  return (
+    <div className="card-surface p-8 text-center text-sm text-muted-foreground">
+      {t(M.notRegistered)} <code className="font-mono">src/features/registry.tsx</code>.
+    </div>
+  );
+}
+
+// Typed against the registry: adding/renaming a slug in tools.ts without
+// updating this map is a compile error.
+const FEATURES: Record<ToolSlug, ComponentType> = {
   timezone: dynamic(() => import("@/features/timezone/timezone-tool"), { ssr: false, loading }),
   epoch: dynamic(() => import("@/features/epoch/epoch-tool"), { ssr: false, loading }),
   currency: dynamic(() => import("@/features/currency/currency-tool"), { ssr: false, loading }),
@@ -50,13 +72,8 @@ const FEATURES: Record<string, ComponentType> = {
 };
 
 export function ToolRenderer({ slug }: { slug: string }) {
-  const Feature = FEATURES[slug];
-  if (!Feature) {
-    return (
-      <div className="card-surface p-8 text-center text-sm text-muted-foreground">
-        Công cụ này chưa được đăng ký trong <code className="font-mono">src/features/registry.tsx</code>.
-      </div>
-    );
-  }
+  // The route param is a plain string — narrow it before indexing the typed map.
+  const Feature = Object.hasOwn(FEATURES, slug) ? FEATURES[slug as ToolSlug] : undefined;
+  if (!Feature) return <MissingTool />;
   return <Feature />;
 }

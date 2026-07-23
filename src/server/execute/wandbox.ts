@@ -1,3 +1,4 @@
+import { ExecutionRateLimitError } from "./piston";
 import type {
   ExecutionProvider,
   ExecutionRequest,
@@ -88,6 +89,9 @@ export class WandboxProvider implements ExecutionProvider {
       cache: "no-store",
     });
 
+    if (res.status === 429) {
+      throw new ExecutionRateLimitError();
+    }
     if (!res.ok) {
       const detail = await res.text().catch(() => "");
       throw new Error(`Máy chủ thực thi trả về ${res.status}: ${detail.slice(0, 200)}`);

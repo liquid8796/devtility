@@ -332,7 +332,10 @@ function reducer(state: CalcState, action: Action): CalcState {
       const currentValue = (): Decimal => {
         if (s.entry) return safeDec(sanitizeEntry(s.entry) || "0");
         if (s.justEvaluated && s.result !== null) return safeDec(s.result);
-        return dec(0);
+        // Empty entry: the display shows lastValueHint(expr) — store that value.
+        const hint = lastValueHint(s.expr);
+        const res = evaluateExpression(hint, s.angleMode, s.ans !== null ? safeDec(s.ans) : undefined);
+        return res.ok ? res.value : dec(0);
       };
       switch (action.op) {
         case "MC":

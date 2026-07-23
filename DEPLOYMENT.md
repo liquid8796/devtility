@@ -135,9 +135,9 @@ UI tự đọc danh sách version từ `/api/execute/runtimes` — không cần 
 
 ## 6. Checklist sau khi deploy
 
-- [ ] Trang chủ hiển thị đủ 12 công cụ, Dark/Light toggle hoạt động.
+- [ ] Trang chủ hiển thị đủ 24 công cụ, Dark/Light toggle hoạt động.
 - [ ] `/tools/converters/currency` — có tỷ giá + biểu đồ (cần internet ra ngoài, không cần key).
-- [ ] `/tools/technology/code-editor` — chạy thử JavaScript (browser) và Python (Piston).
+- [ ] `/tools/technology/code-editor` — chạy thử JavaScript (browser) và Python (Wandbox).
 - [ ] `/api/stats` — trả về `"backend":"redis"` sau khi gắn Redis.
 - [ ] Nút **Chia sẻ** trong Code Editor trả về link sau khi gắn Blob.
 - [ ] Mở trên điện thoại: menu drawer, mọi tool dùng được ở 360px.

@@ -35,6 +35,24 @@ function pythonQuote(text: string): string {
   return `"${escapeJsString(text)}"`;
 }
 
+/**
+ * `(?<name>…)` → `(?P<name>…)`, `\k<name>` → `(?P=name)` for Python re.
+ * Escaped sequences (e.g. `\(?<`) are matched first so they pass through
+ * untouched; lookbehinds `(?<=` / `(?<!` never match the name form.
+ * Known limit: the (pathological) literal text `(?<name>` inside a character
+ * class would also be rewritten.
+ */
+function toPythonPattern(pattern: string): string {
+  return pattern.replace(
+    /\\k<([A-Za-z_][A-Za-z0-9_]*)>|\\[^]|\(\?<([A-Za-z_][A-Za-z0-9_]*)>/g,
+    (m, backref: string | undefined, group: string | undefined) => {
+      if (backref !== undefined) return `(?P=${backref})`;
+      if (group !== undefined) return `(?P<${group}>`;
+      return m;
+    },
+  );
+}
+
 /** `$1` → `\1`, `$<name>` → `\g<name>`, `$&` → `\g<0>` for Python re.sub. */
 function toPythonReplacement(replacement: string): string {
   return replacement
@@ -117,7 +135,7 @@ export function buildPythonSnippet(pattern: string, flags: string, replacement: 
   const lines: string[] = [
     "import re",
     "",
-    `pattern = re.compile(${pythonQuote(pattern)}${flagArg})`,
+    `pattern = re.compile(${pythonQuote(toPythonPattern(pattern))}${flagArg})`,
     "",
     "for m in pattern.finditer(text):",
     "    print(m.group(0), m.start(), m.groupdict())",

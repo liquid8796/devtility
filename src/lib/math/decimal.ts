@@ -20,7 +20,17 @@ export function dec(value: DecimalInput): Decimal {
   return new Decimal(value);
 }
 
-/** Parse user input ("1.234,56" vi / "1,234.56" en / "1234.56") into a Decimal, or null. */
+/**
+ * Parse user input into a Decimal, or null (vi-first separator policy).
+ *
+ * - Comma only: exactly 1 comma is a decimal comma ("3,14" → 3.14, "1,234" → 1.234);
+ *   2+ commas are thousands when every group after the first has 3 digits
+ *   ("1,234,567" → 1234567), otherwise null.
+ * - Dot only: exactly 1 dot is a decimal point ("1.234" → 1.234);
+ *   2+ dots are vi thousands when every group after the first has 3 digits
+ *   ("1.234.567" → 1234567), otherwise null.
+ * - Mixed ("1.234,56" vi / "1,234.56" en): the right-most separator is the decimal point.
+ */
 export function parseDecimal(raw: string): Decimal | null {
   const trimmed = raw.trim();
   if (!trimmed) return null;
@@ -37,10 +47,22 @@ export function parseDecimal(raw: string): Decimal | null {
       normalized = normalized.replace(/,/g, "");
     }
   } else if (hasComma) {
-    // "1,234,567" → thousands; "3,14" → decimal comma
+    // "3,14" / "1,234" → decimal comma; "1,234,567" → thousands; anything else → invalid
     const parts = normalized.split(",");
-    const looksLikeThousands = parts.length > 1 && parts.slice(1).every((p) => p.length === 3);
-    normalized = looksLikeThousands ? parts.join("") : normalized.replace(",", ".");
+    if (parts.length === 2) {
+      normalized = parts.join(".");
+    } else if (parts.slice(1).every((p) => p.length === 3)) {
+      normalized = parts.join("");
+    } else {
+      return null;
+    }
+  } else if (hasDot) {
+    // "1.234" → decimal point; "1.234.567" → vi thousands; anything else → invalid
+    const parts = normalized.split(".");
+    if (parts.length > 2) {
+      if (!parts.slice(1).every((p) => p.length === 3)) return null;
+      normalized = parts.join("");
+    }
   }
 
   try {

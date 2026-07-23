@@ -66,7 +66,7 @@ src/
 └── server/                 # Server-side (Repository & Strategy pattern)
     ├── analytics/          # AnalyticsRepository: Redis ⇄ in-memory
     ├── rates/              # RateProvider: fawazahmed0 CDN + cache Redis
-    ├── execute/            # ExecutionProvider: Piston (thay được qua env)
+    ├── execute/            # ExecutionProvider: Wandbox (Piston qua EXECUTE_API_URL)
     ├── snippets/           # Vercel Blob store
     └── storage/            # Redis client factory
 ```
@@ -85,7 +85,7 @@ npm install
 npm run dev
 ```
 
-Mở http://localhost:3000. **Không cần cấu hình gì thêm** — analytics tự chuyển sang in-memory, tỷ giá gọi CDN công cộng, code editor dùng Piston công cộng. Muốn bật đầy đủ (Redis, Blob), copy `.env.example` → `.env.local` và điền credentials (xem [DEPLOYMENT.md](DEPLOYMENT.md)).
+Mở http://localhost:3000. **Không cần cấu hình gì thêm** — analytics tự chuyển sang in-memory, tỷ giá gọi CDN công cộng, code editor dùng Wandbox công cộng. Muốn bật đầy đủ (Redis, Blob), copy `.env.example` → `.env.local` và điền credentials (xem [DEPLOYMENT.md](DEPLOYMENT.md)).
 
 ```bash
 npm run build   # production build

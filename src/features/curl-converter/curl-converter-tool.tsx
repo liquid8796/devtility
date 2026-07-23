@@ -230,6 +230,15 @@ function PairTable({
   );
 }
 
+/** Mirrors parse-curl's decoding so re-derived params match the initial parse. */
+function tryDecodeURIComponent(value: string): string {
+  try {
+    return decodeURIComponent(value.replace(/\+/g, " "));
+  } catch {
+    return value;
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Tool
 // ---------------------------------------------------------------------------
@@ -276,6 +285,20 @@ export default function CurlConverterTool() {
           .map((line) => {
             const eq = line.indexOf("=");
             return (eq === -1 ? [line, ""] : [line.slice(0, eq), line.slice(eq + 1)]) as [string, string];
+          });
+        return { ...prev, body: { ...prev.body, params, raw: text } };
+      }
+      if (prev.body.type === "form-urlencoded") {
+        const params = text
+          .split("&")
+          .filter((pair) => pair.length > 0)
+          .map((pair) => {
+            const eq = pair.indexOf("=");
+            if (eq === -1) return [tryDecodeURIComponent(pair), ""] as [string, string];
+            return [tryDecodeURIComponent(pair.slice(0, eq)), tryDecodeURIComponent(pair.slice(eq + 1))] as [
+              string,
+              string,
+            ];
           });
         return { ...prev, body: { ...prev.body, params, raw: text } };
       }

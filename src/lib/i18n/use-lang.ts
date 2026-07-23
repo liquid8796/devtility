@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useSyncExternalStore } from "react";
 
 import { DEFAULT_LANG, localeOf, type Lang, type Localized } from "./index";
 
@@ -46,6 +46,15 @@ export function setStoredLang(lang: Lang): void {
  */
 export function useI18n() {
   const lang = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+
+  // Keep <html lang> in sync with the current language. setStoredLang only
+  // covers same-tab toggles; this also handles the restored preference after
+  // hydration and cross-tab "storage" changes. Idempotent, so it is safe for
+  // every component using the hook to run it.
+  useEffect(() => {
+    if (document.documentElement.lang !== lang) document.documentElement.lang = lang;
+  }, [lang]);
+
   const translate = useCallback((text: Localized) => text[lang], [lang]);
   return {
     lang,

@@ -14,7 +14,7 @@ import { Decimal, dec } from "@/lib/math/decimal";
  *     − Giảm trừ bản thân
  *     − Giảm trừ người phụ thuộc (n × mức/người)
  *   = Thu nhập tính thuế (floored at 0)
- *     → Thuế TNCN theo biểu lũy tiến từng phần (7 bậc)
+ *     → Thuế TNCN theo biểu lũy tiến từng phần của chế độ đã chọn (7 bậc)
  *   Net = Thu nhập trước thuế − Thuế TNCN
  *
  * The employer additionally pays BHXH 17.5%, BHYT 3%, BHTN 1% on the same
@@ -25,6 +25,13 @@ import { Decimal, dec } from "@/lib/math/decimal";
 
 /** Lương tối thiểu vùng regions. */
 export type Region = 1 | 2 | 3 | 4;
+
+/** One slice of the progressive PIT schedule. `cap` is null for the open-ended top bracket. */
+export interface PitBracketDef {
+  rate: Decimal;
+  cap: Decimal | null;
+  label: Localized;
+}
 
 export interface TaxConfig {
   /** Human label (vi/en), e.g. "2026". */
@@ -37,26 +44,68 @@ export interface TaxConfig {
   baseSalary: Decimal;
   /** Lương tối thiểu vùng — trần đóng BHTN là 20 × mức của vùng. */
   regionalMinWage: Record<Region, Decimal>;
+  /** Biểu thuế TNCN lũy tiến từng phần theo tháng (thu nhập tính thuế). */
+  pitBrackets: readonly PitBracketDef[];
 }
-
-/** Lương tối thiểu vùng áp dụng từ 01/07/2024 (Nghị định 74/2024/NĐ-CP). */
-const REGIONAL_MIN_WAGE_2024: Record<Region, Decimal> = {
-  1: dec(4_960_000),
-  2: dec(4_410_000),
-  3: dec(3_860_000),
-  4: dec(3_450_000),
-};
 
 /**
  * Chế độ 2026 — giảm trừ gia cảnh mới theo Nghị quyết của UBTVQH,
  * áp dụng từ kỳ tính thuế 2026: 15,5tr bản thân / 6,2tr mỗi người phụ thuộc.
+ *
+ * Lương cơ sở, lương tối thiểu vùng và biểu thuế giữ nguyên số liệu hiện hành
+ * (trùng chế độ 2025) cho đến khi cải cách được ban hành — mỗi preset sở hữu
+ * bộ số riêng nên cập nhật 2026 tại đây không ảnh hưởng chế độ 2025.
  */
 export const PRESET_2026: TaxConfig = {
   label: { vi: "2026", en: "2026" },
   personalDeduction: dec(15_500_000),
   dependentDeduction: dec(6_200_000),
   baseSalary: dec(2_340_000),
-  regionalMinWage: REGIONAL_MIN_WAGE_2024,
+  // Lương tối thiểu vùng áp dụng từ 01/07/2024 (Nghị định 74/2024/NĐ-CP).
+  regionalMinWage: {
+    1: dec(4_960_000),
+    2: dec(4_410_000),
+    3: dec(3_860_000),
+    4: dec(3_450_000),
+  },
+  // Biểu thuế 7 bậc hiện hành (Nghị quyết 954/2020 chưa thay biểu thuế).
+  pitBrackets: [
+    {
+      rate: dec("0.05"),
+      cap: dec(5_000_000),
+      label: { vi: "Bậc 1 (5% đến 5tr)", en: "Bracket 1 (5% up to 5M)" },
+    },
+    {
+      rate: dec("0.1"),
+      cap: dec(10_000_000),
+      label: { vi: "Bậc 2 (10% trên 5tr đến 10tr)", en: "Bracket 2 (10% over 5M to 10M)" },
+    },
+    {
+      rate: dec("0.15"),
+      cap: dec(18_000_000),
+      label: { vi: "Bậc 3 (15% trên 10tr đến 18tr)", en: "Bracket 3 (15% over 10M to 18M)" },
+    },
+    {
+      rate: dec("0.2"),
+      cap: dec(32_000_000),
+      label: { vi: "Bậc 4 (20% trên 18tr đến 32tr)", en: "Bracket 4 (20% over 18M to 32M)" },
+    },
+    {
+      rate: dec("0.25"),
+      cap: dec(52_000_000),
+      label: { vi: "Bậc 5 (25% trên 32tr đến 52tr)", en: "Bracket 5 (25% over 32M to 52M)" },
+    },
+    {
+      rate: dec("0.3"),
+      cap: dec(80_000_000),
+      label: { vi: "Bậc 6 (30% trên 52tr đến 80tr)", en: "Bracket 6 (30% over 52M to 80M)" },
+    },
+    {
+      rate: dec("0.35"),
+      cap: null,
+      label: { vi: "Bậc 7 (35% trên 80tr)", en: "Bracket 7 (35% over 80M)" },
+    },
+  ],
 };
 
 /** Chế độ 2025 — giảm trừ gia cảnh 11tr / 4,4tr (Nghị quyết 954/2020/UBTVQH14). */
@@ -65,7 +114,51 @@ export const PRESET_2025: TaxConfig = {
   personalDeduction: dec(11_000_000),
   dependentDeduction: dec(4_400_000),
   baseSalary: dec(2_340_000),
-  regionalMinWage: REGIONAL_MIN_WAGE_2024,
+  // Lương tối thiểu vùng áp dụng từ 01/07/2024 (Nghị định 74/2024/NĐ-CP).
+  regionalMinWage: {
+    1: dec(4_960_000),
+    2: dec(4_410_000),
+    3: dec(3_860_000),
+    4: dec(3_450_000),
+  },
+  // Biểu thuế TNCN lũy tiến từng phần theo tháng (thu nhập tính thuế).
+  pitBrackets: [
+    {
+      rate: dec("0.05"),
+      cap: dec(5_000_000),
+      label: { vi: "Bậc 1 (5% đến 5tr)", en: "Bracket 1 (5% up to 5M)" },
+    },
+    {
+      rate: dec("0.1"),
+      cap: dec(10_000_000),
+      label: { vi: "Bậc 2 (10% trên 5tr đến 10tr)", en: "Bracket 2 (10% over 5M to 10M)" },
+    },
+    {
+      rate: dec("0.15"),
+      cap: dec(18_000_000),
+      label: { vi: "Bậc 3 (15% trên 10tr đến 18tr)", en: "Bracket 3 (15% over 10M to 18M)" },
+    },
+    {
+      rate: dec("0.2"),
+      cap: dec(32_000_000),
+      label: { vi: "Bậc 4 (20% trên 18tr đến 32tr)", en: "Bracket 4 (20% over 18M to 32M)" },
+    },
+    {
+      rate: dec("0.25"),
+      cap: dec(52_000_000),
+      label: { vi: "Bậc 5 (25% trên 32tr đến 52tr)", en: "Bracket 5 (25% over 32M to 52M)" },
+    },
+    {
+      rate: dec("0.3"),
+      cap: dec(80_000_000),
+      label: { vi: "Bậc 6 (30% trên 52tr đến 80tr)", en: "Bracket 6 (30% over 52M to 80M)" },
+    },
+    {
+      rate: dec("0.35"),
+      cap: null,
+      label: { vi: "Bậc 7 (35% trên 80tr)", en: "Bracket 7 (35% over 80M)" },
+    },
+  ],
 };
 
 /** Tỷ lệ bảo hiểm người lao động đóng (trừ vào lương). */
@@ -81,52 +174,6 @@ export const EMPLOYER_INSURANCE_RATES = {
   bhyt: dec("0.03"),
   bhtn: dec("0.01"),
 } as const;
-
-/** One slice of the progressive PIT schedule. `cap` is null for the open-ended top bracket. */
-interface PitBracketDef {
-  rate: Decimal;
-  cap: Decimal | null;
-  label: Localized;
-}
-
-/** Biểu thuế TNCN lũy tiến từng phần theo tháng (thu nhập tính thuế). */
-export const PIT_BRACKETS: readonly PitBracketDef[] = [
-  {
-    rate: dec("0.05"),
-    cap: dec(5_000_000),
-    label: { vi: "Bậc 1 (5% đến 5tr)", en: "Bracket 1 (5% up to 5M)" },
-  },
-  {
-    rate: dec("0.1"),
-    cap: dec(10_000_000),
-    label: { vi: "Bậc 2 (10% trên 5tr đến 10tr)", en: "Bracket 2 (10% over 5M to 10M)" },
-  },
-  {
-    rate: dec("0.15"),
-    cap: dec(18_000_000),
-    label: { vi: "Bậc 3 (15% trên 10tr đến 18tr)", en: "Bracket 3 (15% over 10M to 18M)" },
-  },
-  {
-    rate: dec("0.2"),
-    cap: dec(32_000_000),
-    label: { vi: "Bậc 4 (20% trên 18tr đến 32tr)", en: "Bracket 4 (20% over 18M to 32M)" },
-  },
-  {
-    rate: dec("0.25"),
-    cap: dec(52_000_000),
-    label: { vi: "Bậc 5 (25% trên 32tr đến 52tr)", en: "Bracket 5 (25% over 32M to 52M)" },
-  },
-  {
-    rate: dec("0.3"),
-    cap: dec(80_000_000),
-    label: { vi: "Bậc 6 (30% trên 52tr đến 80tr)", en: "Bracket 6 (30% over 52M to 80M)" },
-  },
-  {
-    rate: dec("0.35"),
-    cap: null,
-    label: { vi: "Bậc 7 (35% trên 80tr)", en: "Bracket 7 (35% over 80M)" },
-  },
-];
 
 export interface TaxBracketLine {
   /** Marginal rate of this bracket (e.g. 0.05). */
@@ -230,7 +277,7 @@ export function grossToNet(input: GrossToNetInput): SalaryBreakdown {
   // --- Progressive PIT ------------------------------------------------------
   let lower = ZERO;
   let totalTax = ZERO;
-  const taxBrackets: TaxBracketLine[] = PIT_BRACKETS.map((bracket) => {
+  const taxBrackets: TaxBracketLine[] = config.pitBrackets.map((bracket) => {
     const above = Decimal.max(taxableIncome.minus(lower), ZERO);
     const taxedIncome =
       bracket.cap === null ? above : Decimal.min(above, bracket.cap.minus(lower));

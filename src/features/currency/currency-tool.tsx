@@ -198,8 +198,9 @@ export default function CurrencyTool() {
     return () => controller.abort();
   }, [from, to, range, historyKey]);
 
-  const snapshot = snapshotResult?.data ?? null;
-  const snapshotError = snapshotResult?.key === snapshotKey ? (snapshotResult.error ?? null) : null;
+  const snapshotLoading = snapshotResult?.key !== snapshotKey;
+  const snapshot = !snapshotLoading ? (snapshotResult?.data ?? null) : null;
+  const snapshotError = !snapshotLoading ? (snapshotResult?.error ?? null) : null;
   const historyLoading = historyResult?.key !== historyKey;
   const history = useMemo(() => historyResult?.points ?? [], [historyResult]);
   const historyError = !historyLoading ? (historyResult?.error ?? null) : null;
