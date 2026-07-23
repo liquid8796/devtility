@@ -8,7 +8,7 @@ import { CATEGORIES, getToolsByCategory, SITE, TOOLS } from "@/lib/registry/tool
 import { toolPath } from "@/lib/registry/types";
 
 const M = {
-  badge: { vi: "công cụ · miễn phí · open-source", en: "tools · free · open-source" },
+  badge: { vi: "công cụ · miễn phí", en: "tools · free" },
   heroPrefix: { vi: "Bộ công cụ", en: "The" },
   heroHighlight: { vi: "tiện ích", en: "utility toolbox" },
   heroSuffix: { vi: "cho lập trình viên", en: "for developers" },
