@@ -33,6 +33,12 @@ export interface StageResult {
   output: string;
   code: number | null;
   signal: string | null;
+  /** Wall-clock time reported by the engine, in ms (null when the engine doesn't report it) */
+  wallTimeMs?: number | null;
+  /** CPU time consumed, in ms (null when the engine doesn't report it) */
+  cpuTimeMs?: number | null;
+  /** Peak memory usage, in bytes (null when the engine doesn't report it) */
+  memoryBytes?: number | null;
 }
 
 export interface ExecutionResult {
@@ -42,7 +48,21 @@ export interface ExecutionResult {
   compile?: StageResult;
 }
 
+/**
+ * What the active engine can do — surfaced to the client via /api/execute/runtimes
+ * so the UI can enable/disable inputs instead of failing at run time.
+ */
+export interface ProviderCapabilities {
+  /** Engine id shown in UI hints */
+  name: "piston" | "wandbox";
+  /** Languages whose programs receive command-line arguments */
+  argsLanguages: SupportedLanguage[];
+  /** Whether run stages include cpuTimeMs / memoryBytes */
+  reportsResourceUsage: boolean;
+}
+
 export interface ExecutionProvider {
   listRuntimes(): Promise<RuntimeInfo[]>;
   execute(request: ExecutionRequest): Promise<ExecutionResult>;
+  capabilities(): ProviderCapabilities;
 }

@@ -6,9 +6,10 @@ export const runtime = "nodejs";
 
 export async function GET(): Promise<NextResponse> {
   try {
-    const runtimes = await getExecutionProvider().listRuntimes();
+    const provider = getExecutionProvider();
+    const runtimes = await provider.listRuntimes();
     return NextResponse.json(
-      { runtimes },
+      { runtimes, capabilities: provider.capabilities() },
       { headers: { "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=3600" } },
     );
   } catch (error) {

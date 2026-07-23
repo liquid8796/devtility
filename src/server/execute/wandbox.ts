@@ -3,6 +3,7 @@ import type {
   ExecutionProvider,
   ExecutionRequest,
   ExecutionResult,
+  ProviderCapabilities,
   RuntimeInfo,
   StageResult,
   SupportedLanguage,
@@ -61,6 +62,17 @@ export function preprocessJava(code: string): string {
 }
 
 export class WandboxProvider implements ExecutionProvider {
+  capabilities(): ProviderCapabilities {
+    return {
+      name: "wandbox",
+      // Verified against the live API: `runtime-option-raw` entries are appended
+      // after `prog.py` for Python (→ sys.argv), but inserted BEFORE the class
+      // name for Java (→ they become JVM options, never program args).
+      argsLanguages: ["python"],
+      reportsResourceUsage: false,
+    };
+  }
+
   async listRuntimes(): Promise<RuntimeInfo[]> {
     const res = await fetch(`${BASE_URL}/list.json`, { next: { revalidate: 3600 } });
     if (!res.ok) throw new Error(`Wandbox /list.json trả về ${res.status}`);
@@ -90,6 +102,11 @@ export class WandboxProvider implements ExecutionProvider {
       body["compiler-option-raw"] = "-encoding\nUTF-8";
       body["runtime-option-raw"] =
         "-Dstdout.encoding=UTF-8\n-Dstderr.encoding=UTF-8\n-Dfile.encoding=UTF-8";
+    }
+    // Program args (newline-separated) — only for languages in capabilities().argsLanguages;
+    // the API route rejects args for the rest before we get here.
+    if (request.language === "python" && request.args && request.args.length > 0) {
+      body["runtime-option-raw"] = request.args.join("\n");
     }
 
     const res = await fetch(`${BASE_URL}/compile.json`, {

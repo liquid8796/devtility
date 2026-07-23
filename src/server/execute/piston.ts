@@ -2,6 +2,7 @@ import type {
   ExecutionProvider,
   ExecutionRequest,
   ExecutionResult,
+  ProviderCapabilities,
   RuntimeInfo,
   StageResult,
   SupportedLanguage,
@@ -23,11 +24,36 @@ interface PistonRuntime {
   aliases: string[];
 }
 
+/** Piston ≥ 3.1 also reports wall_time / cpu_time (ms) and memory (bytes) per stage. */
+interface PistonStage {
+  stdout: string;
+  stderr: string;
+  output: string;
+  code: number | null;
+  signal: string | null;
+  wall_time?: number | null;
+  cpu_time?: number | null;
+  memory?: number | null;
+}
+
 interface PistonExecuteResponse {
   language: string;
   version: string;
-  run: StageResult;
-  compile?: StageResult;
+  run: PistonStage;
+  compile?: PistonStage;
+}
+
+function toStageResult(stage: PistonStage): StageResult {
+  return {
+    stdout: stage.stdout,
+    stderr: stage.stderr,
+    output: stage.output,
+    code: stage.code,
+    signal: stage.signal,
+    wallTimeMs: typeof stage.wall_time === "number" ? stage.wall_time : null,
+    cpuTimeMs: typeof stage.cpu_time === "number" ? stage.cpu_time : null,
+    memoryBytes: typeof stage.memory === "number" ? stage.memory : null,
+  };
 }
 
 const FILE_NAMES: Record<SupportedLanguage, string> = {
@@ -37,6 +63,15 @@ const FILE_NAMES: Record<SupportedLanguage, string> = {
 };
 
 export class PistonProvider implements ExecutionProvider {
+  capabilities(): ProviderCapabilities {
+    return {
+      name: "piston",
+      // Piston passes `args` straight to the program for every runtime.
+      argsLanguages: [...SUPPORTED_LANGUAGES],
+      reportsResourceUsage: true,
+    };
+  }
+
   async listRuntimes(): Promise<RuntimeInfo[]> {
     const res = await fetch(`${BASE_URL}/runtimes`, { next: { revalidate: 3600 } });
     if (!res.ok) throw new Error(`Piston /runtimes trả về ${res.status}`);
@@ -72,7 +107,13 @@ export class PistonProvider implements ExecutionProvider {
       const detail = await res.text().catch(() => "");
       throw new Error(`Máy chủ thực thi trả về ${res.status}: ${detail.slice(0, 200)}`);
     }
-    return (await res.json()) as PistonExecuteResponse;
+    const data = (await res.json()) as PistonExecuteResponse;
+    return {
+      language: data.language,
+      version: data.version,
+      run: toStageResult(data.run),
+      compile: data.compile ? toStageResult(data.compile) : undefined,
+    };
   }
 }
 
