@@ -24,10 +24,10 @@
 | **Lương Net ⇄ Gross** | Theo quy định BHXH/BHYT/BHTN + thuế TNCN lũy tiến Việt Nam (chế độ 2025 & 2026), bảng diễn giải + chi phí doanh nghiệp |
 | **Lịch vạn niên** | Âm lịch (thuật toán thiên văn Hồ Ngọc Đức), can chi, tiết khí, giờ hoàng đạo, ngày hoàng/hắc đạo, đổi dương ↔ âm |
 
-### 💻 Technology
+### 💻 Developer Tools
 | Công cụ | Mô tả |
 |---|---|
-| **Code Editor Online** | Syntax highlighting (CodeMirror 6), **code completion kiểu IntelliJ** (Basic/Smart, live templates `sout`/`psvm`/`fori`, Ctrl+Space), chạy Java/Python (Wandbox) & JavaScript (Web Worker sandbox), chia sẻ snippet qua Vercel Blob |
+| **Code Editor Online** | Syntax highlighting (CodeMirror 6), **code completion kiểu IntelliJ** (Basic/Smart, live templates `sout`/`psvm`/`fori`, Ctrl+Space), chạy Java/Python (Wandbox) & JavaScript (Web Worker sandbox), stdin + tham số dòng lệnh, metrics sau mỗi lần chạy (thời gian/CPU/RAM/kích thước output), chia sẻ snippet qua Vercel Blob |
 | **JSON Toolkit** | Format, minify, validate (báo dòng/cột lỗi), tree view, sort key, escape/unescape |
 | **JSON Converter** | JSON ⇄ YAML ⇄ XML ⇄ TOML ⇄ CSV với cảnh báo lossy rõ ràng |
 | **JWT Inspector** | Decode header/payload, kiểm tra exp/nbf/iat/iss/aud, verify HS/RS/ES bằng secret hoặc JWK, tạo JWT mới |

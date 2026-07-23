@@ -57,11 +57,13 @@ export const CATEGORIES: Category[] = [
     order: 2,
   },
   {
+    // Display name is "Developer Tools"; the id stays "technology" so existing
+    // /tools/technology/* URLs (bookmarks, SEO) keep working.
     id: "technology",
-    name: { vi: "Technology", en: "Technology" },
+    name: { vi: "Developer Tools", en: "Developer Tools" },
     tagline: {
-      vi: "Code editor online chạy Java, Python, JavaScript",
-      en: "Online code editor running Java, Python, JavaScript",
+      vi: "Code editor online, JSON, JWT, regex, SQL, cURL, OpenAPI…",
+      en: "Online code editor, JSON, JWT, regex, SQL, cURL, OpenAPI…",
     },
     icon: Cpu,
     order: 3,
